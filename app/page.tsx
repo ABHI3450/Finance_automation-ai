@@ -10,15 +10,13 @@ type Transaction = {
   amount: number;
 };
 
-const AVATAR_COLORS = [
-  "bg-[rgba(79,110,247,0.15)] text-[#7b9bff]",
-  "bg-[rgba(139,92,246,0.15)] text-[#c4b5fd]",
-  "bg-[rgba(52,211,153,0.12)] text-[#6ee7b7]",
-  "bg-[rgba(251,191,36,0.12)] text-[#fbbf24]",
-  "bg-[rgba(244,63,94,0.12)] text-[#fb7185]",
+const NAV_ITEMS: { label: string; icon: string }[] = [
+  { label: "Overview", icon: "ti-layout-dashboard" },
+  { label: "Transactions", icon: "ti-receipt" },
+  { label: "Analytics", icon: "ti-chart-donut-3" },
+  { label: "Reports", icon: "ti-file-analytics" },
 ];
 
-const NAV_ITEMS = ["Overview", "Transactions", "Analytics", "Reports"];
 const FILTER_ITEMS = ["All", "Alerts", "Large"];
 
 const AI_PROMPTS = [
@@ -27,15 +25,26 @@ const AI_PROMPTS = [
   "How can I reduce my expenses?",
 ];
 
+const CATEGORY_COLORS: Record<string, string> = {
+  Food: "#cda43a",
+  Travel: "#6a8bc4",
+  Shopping: "#2bb27f",
+  Bills: "#e2685e",
+  Entertainment: "#a888d1",
+  Investment: "#3fb6b0",
+  Healthcare: "#d98a52",
+  Other: "#6b7280",
+};
+
 function categorise(merchant: string): string {
   const m = (merchant || "").toLowerCase();
-  if (/swiggy|zomato|food|restaurant|domino|pizza|mcd|kfc|starbucks|cafe|blinkit|zepto|bigbasket/.test(m)) return "Food";
-  if (/uber|ola|rapido|irctc|rail|indigo|flight|petrol|fuel/.test(m)) return "Travel";
-  if (/amazon|flipkart|myntra|nykaa|ajio|mall|shop/.test(m)) return "Shopping";
-  if (/electricity|bill|emi|recharge|airtel|jio|broadband|rent/.test(m)) return "Bills";
-  if (/netflix|spotify|hotstar|prime|youtube|subscription/.test(m)) return "Entertainment";
-  if (/zerodha|groww|sip|mutual|lic|insurance/.test(m)) return "Investment";
-  if (/apollo|hospital|pharmacy|medplus|doctor/.test(m)) return "Healthcare";
+  if (/swiggy|zomato|doordash|grubhub|ubereats|food|restaurant|domino|pizza|mcd|kfc|starbucks|cafe|blinkit|zepto|bigbasket|instacart|whole foods|costco|grocery/.test(m)) return "Food";
+  if (/uber|ola|lyft|cab|taxi|rapido|irctc|rail|indigo|flight|petrol|fuel|gas/.test(m)) return "Travel";
+  if (/amazon|flipkart|myntra|nykaa|ajio|target|best buy|walmart|apple|mall|shop/.test(m)) return "Shopping";
+  if (/electricity|bill|emi|recharge|airtel|jio|at&t|verizon|t-mobile|broadband|rent/.test(m)) return "Bills";
+  if (/netflix|spotify|hotstar|prime|youtube|subscription|hulu|disney/.test(m)) return "Entertainment";
+  if (/zerodha|groww|fidelity|vanguard|schwab|sip|mutual|lic|insurance/.test(m)) return "Investment";
+  if (/apollo|hospital|pharmacy|medplus|doctor|cvs|walgreens/.test(m)) return "Healthcare";
   return "Other";
 }
 
@@ -45,7 +54,6 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [isDragging, setIsDragging] = useState(false);
 
-  // AI Insight state
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
@@ -56,8 +64,83 @@ export default function Home() {
   const [profileSaved, setProfileSaved] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Close profile dropdown on outside click
+  const [currentTime, setCurrentTime] = useState("");
+  const [salutation, setSalutation] = useState("Hello");
+
+  // Keep track of live time and calculate matching salutation
   useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hrs = now.getHours();
+      let greet = "Good evening";
+      if (hrs < 12) greet = "Good morning";
+      else if (hrs < 17) greet = "Good afternoon";
+      setSalutation(greet);
+
+      const formatted = now.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }) + " · " + now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      });
+      setCurrentTime(formatted);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load initial data from localStorage
+  useEffect(() => {
+    const savedRows = localStorage.getItem("finance_ai_rows");
+    if (savedRows) {
+      try {
+        let parsed: Transaction[] = JSON.parse(savedRows);
+        // Check if there are remnants of Indian companies or typical large Rupee figures
+        const needsConversion = parsed.some(r => 
+          /swiggy|zomato|reliance|airtel|ola|blinkit|myntra|medplus|apollo|india/i.test(r.merchant) || r.amount > 10000
+        );
+        if (needsConversion) {
+          parsed = parsed.map(r => {
+            let m = r.merchant;
+            let a = r.amount;
+            
+            // Map merchants
+            if (/swiggy|zomato/i.test(m)) m = m.replace(/swiggy|zomato/i, "DoorDash");
+            if (/reliance digital/i.test(m)) m = "Best Buy Electronics";
+            if (/airtel/i.test(m)) m = "AT&T Bill";
+            if (/ola cabs|ola cab/i.test(m)) m = "Lyft Ride";
+            if (/blinkit/i.test(m)) m = "Instacart Grocery";
+            if (/myntra/i.test(m)) m = "Target Store";
+            if (/medplus|apollo/i.test(m)) m = "CVS Pharmacy";
+            if (/amazon india/i.test(m)) m = "Amazon US";
+            if (/apple store india/i.test(m)) m = "Apple Store US";
+            
+            // Convert currency from INR to USD (approx divide by 83)
+            if (a > 100) {
+              a = Math.round(a / 83);
+              if (a === 0) a = 1;
+            }
+            return { ...r, merchant: m, amount: a };
+          });
+          localStorage.setItem("finance_ai_rows", JSON.stringify(parsed));
+        }
+        setRows(parsed);
+      } catch (e) {
+        console.error("Failed to load saved transactions", e);
+      }
+    }
+    const savedName = localStorage.getItem("finance_ai_profile_name");
+    const savedEmail = localStorage.getItem("finance_ai_profile_email");
+    if (savedName) setProfileName(savedName);
+    if (savedEmail) setProfileEmail(savedEmail);
+    if (savedName || savedEmail) setProfileSaved(true);
+
     const handler = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
@@ -67,23 +150,83 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const updateRows = (newRows: Transaction[]) => {
+    setRows(newRows);
+    localStorage.setItem("finance_ai_rows", JSON.stringify(newRows));
+  };
+
+  const loadDemoData = () => {
+    const DEMO_TRANSACTIONS: Transaction[] = [
+      // === 10 HIGH VALUE / HIGH RISK SPENDINGS (>= $500) ===
+      { date: "2026-07-01", merchant: "Monthly Rent Payment", amount: 1500 },
+      { date: "2026-07-02", merchant: "Apple Store Online", amount: 2499 },
+      { date: "2026-07-03", merchant: "Tiffany & Co. Jewelry", amount: 1800 },
+      { date: "2026-07-05", merchant: "Amazon Web Services Hosting", amount: 1249 },
+      { date: "2026-07-06", merchant: "Ikea Home Furniture", amount: 920 },
+      { date: "2026-07-08", merchant: "Best Buy Electronics", amount: 849 },
+      { date: "2026-07-10", merchant: "Hilton Hotels Booking", amount: 720 },
+      { date: "2026-07-11", merchant: "Delta Air Lines ticket", amount: 650 },
+      { date: "2026-07-12", merchant: "GEICO Auto Insurance", amount: 580 },
+      { date: "2026-07-14", merchant: "Vanguard Investment SIP", amount: 500 },
+
+      // === 20 MEDIUM VALUE SPENDINGS ($100 to $499) ===
+      { date: "2026-07-01", merchant: "Airbnb Reservation", amount: 420 },
+      { date: "2026-07-02", merchant: "Costco Wholesale", amount: 312 },
+      { date: "2026-07-03", merchant: "Home Depot Supplies", amount: 289 },
+      { date: "2026-07-04", merchant: "Equinox Gym Membership", amount: 250 },
+      { date: "2026-07-04", merchant: "Ticketmaster Concert", amount: 210 },
+      { date: "2026-07-05", merchant: "REI Outdoor Equipment", amount: 190 },
+      { date: "2026-07-05", merchant: "Target Store", amount: 178 },
+      { date: "2026-07-06", merchant: "AT&T Mobility Bill", amount: 155 },
+      { date: "2026-07-06", merchant: "Zoom Video Subscription", amount: 150 },
+      { date: "2026-07-07", merchant: "Macy's Department Store", amount: 145 },
+      { date: "2026-07-08", merchant: "Adidas Online", amount: 140 },
+      { date: "2026-07-08", merchant: "Sephora Cosmetics", amount: 135 },
+      { date: "2026-07-09", merchant: "Nike Store Purchase", amount: 130 },
+      { date: "2026-07-09", merchant: "Whole Foods Market", amount: 127 },
+      { date: "2026-07-10", merchant: "Comcast Xfinity Internet", amount: 120 },
+      { date: "2026-07-11", merchant: "Trader Joe's Groceries", amount: 115 },
+      { date: "2026-07-12", merchant: "Blue Bottle Coffee Order", amount: 115 },
+      { date: "2026-07-12", merchant: "CVS Pharmacy", amount: 112 },
+      { date: "2026-07-13", merchant: "Chevron Gas Station", amount: 110 },
+      { date: "2026-07-14", merchant: "Petco Supplies", amount: 105 },
+
+      // === 10 SMALL VALUE SPENDINGS (< $100) ===
+      { date: "2026-07-01", merchant: "Uber Eats Dinner", amount: 76 },
+      { date: "2026-07-02", merchant: "Shell Gas Station", amount: 62 },
+      { date: "2026-07-03", merchant: "DoorDash Food Delivery", amount: 56 },
+      { date: "2026-07-04", merchant: "Walgreens Pharmacy", amount: 43 },
+      { date: "2026-07-05", merchant: "Chipotle Restaurant", amount: 42 },
+      { date: "2026-07-06", merchant: "Uber Ride", amount: 34 },
+      { date: "2026-07-07", merchant: "Lyft Cab Ride", amount: 28 },
+      { date: "2026-07-08", merchant: "Starbucks Coffee", amount: 18 },
+      { date: "2026-07-09", merchant: "Netflix Subscription", amount: 15 },
+      { date: "2026-07-10", merchant: "Spotify Premium", amount: 12 }
+    ];
+    updateRows(DEMO_TRANSACTIONS);
+  };
+
+  const clearData = () => {
+    updateRows([]);
+  };
+
   const parseCSV = (text: string) => {
     const lines = text.trim().split("\n");
     const headers = lines[0].toLowerCase();
-    const hasHeader = headers.includes("date") || headers.includes("merchant") || headers.includes("amount");
+    const hasHeader = headers.includes("date") || headers.includes("merchant") || headers.includes("amount") || headers.includes("description");
     const dataLines = hasHeader ? lines.slice(1) : lines;
     const parsed = dataLines
-      .filter(l => l.trim())
+      .filter((l) => l.trim())
       .map((line) => {
         const cols = line.split(",");
         return {
           date: cols[0]?.trim() ?? "",
           merchant: cols[1]?.trim() ?? "Unknown",
-          amount: Math.abs(parseFloat((cols[2]?.trim() ?? "0").replace(/[₹,\s()]/g, "")) || 0),
+          amount: Math.abs(parseFloat((cols[2]?.trim() ?? "0").replace(/[$$,\s()]/g, "")) || 0),
         };
       })
-      .filter(r => r.amount > 0 || r.merchant !== "Unknown");
-    setRows(parsed);
+      .filter((r) => r.amount > 0 || r.merchant !== "Unknown");
+    updateRows(parsed);
   };
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,122 +248,232 @@ export default function Home() {
   };
 
   const total = useMemo(() => rows.reduce((sum, r) => sum + r.amount, 0), [rows]);
-  const alerts = useMemo(() => rows.filter((r) => r.amount > 1000), [rows]);
+  const alerts = useMemo(() => rows.filter((r) => r.amount >= 500), [rows]);
 
   const filteredRows = useMemo(() => {
-    if (activeFilter === "Alerts") return rows.filter((r) => r.amount > 1000);
-    if (activeFilter === "Large") return rows.filter((r) => r.amount > 500);
+    if (activeFilter === "Alerts") return rows.filter((r) => r.amount >= 500);
+    if (activeFilter === "Large") return rows.filter((r) => r.amount >= 200);
     return rows;
   }, [rows, activeFilter]);
 
   const formatAmount = (n: number) =>
-    new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
-  
+    new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n || 0);
+
   const downloadPDF = async () => {
-    if (rows.length === 0) return alert("No data to export!");
-    
-    // 1. Remember what tab we are on, then secretly switch to Overview
+    if (rows.length === 0) return alert("No data to export yet — upload a CSV first.");
+
     const currentTab = activeNav;
     setActiveNav("Overview");
 
-    // 2. Give the browser a split-second (300ms) to render the Overview page
     setTimeout(async () => {
       const dashboardElement = document.getElementById("dashboard-main");
       if (!dashboardElement) {
-        setActiveNav(currentTab); // Revert if failed
+        setActiveNav(currentTab);
         return;
       }
-
       try {
         const canvas = await toCanvas(dashboardElement, {
-          backgroundColor: "#080b14",
-          pixelRatio: 2, // High resolution
+          backgroundColor: "#0a0d12",
+          pixelRatio: 2,
+          skipFonts: true,
         });
-        
         const imgData = canvas.toDataURL("image/png");
         const pdf = new jsPDF("p", "mm", "a4");
-        
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
         pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
         pdf.save("Finance_Summary.pdf");
       } catch (err) {
         console.error("Failed to generate PDF", err);
         alert("Something went wrong generating the PDF.");
       } finally {
-        // 3. Switch back to the tab the user was originally on!
         setActiveNav(currentTab);
       }
     }, 300);
   };
 
-  // Category totals for Analytics
+  const downloadCSV = () => {
+    if (rows.length === 0) return alert("No data to export yet — upload a CSV first.");
+    const headers = ["Date", "Merchant", "Amount", "Category"];
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => {
+        const cat = categorise(row.merchant);
+        const merchantEscaped = row.merchant.includes(",") 
+          ? `"${row.merchant.replace(/"/g, '""')}"` 
+          : row.merchant;
+        return [row.date, merchantEscaped, row.amount, cat].join(",");
+      })
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "reconciled_transactions.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const catTotals = useMemo(() => {
     const m: Record<string, number> = {};
-    rows.forEach(r => {
+    rows.forEach((r) => {
       const cat = categorise(r.merchant);
       m[cat] = (m[cat] || 0) + r.amount;
     });
     return Object.entries(m).sort((a, b) => b[1] - a[1]);
   }, [rows]);
 
-  //weelly trend
+  const downloadCategoryReport = () => {
+    if (rows.length === 0) return alert("No data to export yet — upload a CSV first.");
+    
+    let reportText = `GALAXY FINANCE AI - CATEGORY ANALYSIS REPORT\n`;
+    reportText += `============================================\n`;
+    reportText += `Total Spending: $${formatAmount(total)}\n`;
+    reportText += `Total Transactions: ${rows.length}\n`;
+    reportText += `Date Generated: ${new Date().toLocaleDateString()}\n\n`;
+    reportText += `Category Breakdown:\n`;
+    reportText += `-------------------\n`;
+    
+    catTotals.forEach(([cat, amt]) => {
+      const pct = Math.round((amt / total) * 100);
+      reportText += `${cat.padEnd(20)}: $${formatAmount(amt).padEnd(12)} (${pct}%)\n`;
+    });
+    
+    reportText += `\nTop Transactions per Category:\n`;
+    reportText += `------------------------------\n`;
+    const catGroups: Record<string, Transaction[]> = {};
+    rows.forEach(r => {
+      const cat = categorise(r.merchant);
+      if (!catGroups[cat]) catGroups[cat] = [];
+      catGroups[cat].push(r);
+    });
+    
+    Object.keys(catGroups).forEach(cat => {
+      reportText += `\n[${cat}]\n`;
+      const topTxns = catGroups[cat]
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 3);
+      topTxns.forEach(txn => {
+        reportText += `  - ${txn.date}: ${txn.merchant} - $${formatAmount(txn.amount)}\n`;
+      });
+    });
+    
+    const blob = new Blob([reportText], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "category_analysis_report.txt");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-const weeklyTrend = useMemo(() => {
+  const downloadAnomalyReport = () => {
+    if (rows.length === 0) return alert("No data to export yet — upload a CSV first.");
+    
+    let reportText = `GALAXY FINANCE AI - ANOMALY & FRAUD ALERT REPORT\n`;
+    reportText += `================================================\n`;
+    reportText += `Total Spending Analyzed: $${formatAmount(total)}\n`;
+    reportText += `Total Transactions: ${rows.length}\n`;
+    
+    const avgVal = total / rows.length;
+    const sqDiffs = rows.map(r => Math.pow(r.amount - avgVal, 2));
+    const variance = sqDiffs.reduce((sum, val) => sum + val, 0) / rows.length;
+    const stdDev = Math.sqrt(variance);
+    const thresholdVal = avgVal + stdDev;
+    
+    reportText += `Anomaly Detection Threshold (Avg + 1 StdDev): $${formatAmount(thresholdVal)}\n`;
+    reportText += `Flagged Anomalies: ${alerts.length} transaction(s)\n`;
+    reportText += `Date Generated: ${new Date().toLocaleDateString()}\n\n`;
+    
+    if (alerts.length === 0) {
+      reportText += `Status: ALL CLEAR. No suspicious transaction activity detected.\n`;
+    } else {
+      reportText += `Flagged Transactions (Exceeding $${formatAmount(thresholdVal)}):\n`;
+      reportText += `---------------------\n`;
+      alerts.forEach((txn, index) => {
+        reportText += `${index + 1}. Date: ${txn.date}\n`;
+        reportText += `   Merchant: ${txn.merchant}\n`;
+        reportText += `   Amount: $${formatAmount(txn.amount)}\n`;
+        reportText += `   Category: ${categorise(txn.merchant)}\n`;
+        reportText += `   Reason: Amount exceeds standard deviation threshold\n\n`;
+      });
+    }
+    
+    const blob = new Blob([reportText], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "anomaly_fraud_report.txt");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Donut geometry — derived from real category totals
+  const donutSegments = useMemo(() => {
+    const R = 34;
+    const C = 2 * Math.PI * R;
+    let cursor = 0;
+    return catTotals.slice(0, 4).map(([cat, amt]) => {
+      const frac = total > 0 ? amt / total : 0;
+      const len = frac * C;
+      const seg = { cat, amt, dasharray: `${len} ${C - len}`, dashoffset: -cursor, color: CATEGORY_COLORS[cat] || "#6b7280" };
+      cursor += len;
+      return seg;
+    });
+  }, [catTotals, total]);
+
+  const weeklyTrend = useMemo(() => {
+    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     if (rows.length === 0) {
-      return [
-        { day: "Mon", amount: 0, h: 10, highlight: false }, 
-        { day: "Tue", amount: 0, h: 10, highlight: false },
-        { day: "Wed", amount: 0, h: 10, highlight: false }, 
-        { day: "Thu", amount: 0, h: 10, highlight: false },
-        { day: "Fri", amount: 0, h: 10, highlight: false }, 
-        { day: "Sat", amount: 0, h: 10, highlight: false },
-        { day: "Sun", amount: 0, h: 10, highlight: false },
-      ];
+      return labels.map((day) => ({ day, amount: 0, h: 10, highlight: false }));
     }
 
-    const totals = [0, 0, 0, 0, 0, 0, 0]; // Mon through Sun
-    const dayMap = [6, 0, 1, 2, 3, 4, 5]; 
+    const totals = [0, 0, 0, 0, 0, 0, 0];
+    const dayMap = [6, 0, 1, 2, 3, 4, 5];
 
-    rows.forEach(r => {
+    rows.forEach((r) => {
       if (!r.date) return;
       const parts = r.date.includes("-") ? r.date.split("-") : r.date.split("/");
       let d;
-      if (parts[0].length === 4) {
-        d = new Date(r.date); 
+      if (parts[0]?.length === 4) {
+        d = new Date(r.date);
+      } else if (parts.length === 3) {
+        d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
       } else {
-        d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); 
+        d = new Date(NaN);
       }
-      
       if (isNaN(d.getTime())) return;
       totals[dayMap[d.getDay()]] += r.amount;
     });
 
     const max = Math.max(...totals) || 1;
-    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-    return totals.map((amt, i) => {
-      const h = Math.max(10, Math.round((amt / max) * 70));
-      return {
-        day: labels[i],
-        amount: amt,
-        h,
-        highlight: amt === max && amt > 0
-      };
-    });
+    return totals.map((amt, i) => ({
+      day: labels[i],
+      amount: amt,
+      h: Math.max(10, Math.round((amt / max) * 70)),
+      highlight: amt === max && amt > 0,
+    }));
   }, [rows]);
 
-  // AI Insight call
- // AI Insight call
   const runAI = async (prompt: string) => {
     setAiPrompt(prompt);
     setAiResult("");
     setAiLoading(true);
 
-    const context = rows.length > 0
-      ? `Here are the user's transactions (merchant, amount):\n${rows.slice(0, 60).map(r => `${r.merchant}: ₹${r.amount}`).join("\n")}\n\nTotal spend: ₹${formatAmount(total)}. Number of transactions: ${rows.length}.`
-      : "The user has not uploaded any transactions yet.";
+    const context =
+      rows.length > 0
+        ? `Here are the user's transactions (merchant, amount):\n${rows
+            .slice(0, 60)
+            .map((r) => `${r.merchant}: $${r.amount}`)
+            .join("\n")}\n\nTotal spend: $${formatAmount(total)}. Number of transactions: ${rows.length}.`
+        : "The user has not uploaded any transactions yet.";
 
     try {
       const res = await fetch("/api/ai", {
@@ -228,14 +481,12 @@ const weeklyTrend = useMemo(() => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt, context }),
       });
-      
       const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.error);
-      
-      setAiResult(data.text);
+      if (!res.ok) throw new Error(data?.error || "AI request failed");
+      setAiResult(data.text ?? "No response received.");
     } catch (err) {
-      setAiResult("Unable to connect to AI. Please try again.");
+      const msg = err instanceof Error ? err.message : "Unable to connect to AI.";
+      setAiResult(msg);
       console.error(err);
     } finally {
       setAiLoading(false);
@@ -243,638 +494,603 @@ const weeklyTrend = useMemo(() => {
   };
 
   const initials = profileName
-    ? profileName.trim().split(/\s+/).map((w: string) => w[0]).slice(0, 2).join("").toUpperCase()
+    ? profileName.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase()
     : null;
 
   return (
-    <main className="finance-bg min-h-screen text-white">
-
-      {/* ── NAV ── */}
-      <nav className="nav-glass sticky top-0 z-50 flex items-center justify-between px-10 py-4">
-        <div className="flex items-center gap-3">
-          <div className="logo-mark">₹</div>
-          <span className="text-[17px] font-medium tracking-[-0.3px]">Finance AI</span>
+    <main className="app-shell">
+      {/* ══════════════ LEFT RAIL ══════════════ */}
+      <aside className="rail">
+        <div className="rail-brand">
+          <div className="rail-mark">
+            <i className="ti ti-currency-dollar" style={{ fontSize: 18, color: "#fff" }} />
+          </div>
+          <div className="rail-brand-text">
+            Finance AI
+            <small>Ledger Intelligence</small>
+          </div>
         </div>
 
-        <div className="nav-pills-wrap">
+        <nav className="rail-nav">
           {NAV_ITEMS.map((item) => (
             <button
-              key={item}
-              onClick={() => setActiveNav(item)}
-              className={`nav-pill ${activeNav === item ? "active" : ""}`}
+              key={item.label}
+              onClick={() => setActiveNav(item.label)}
+              className={`rail-link ${activeNav === item.label ? "active" : ""}`}
             >
-              {item}
+              <i className={`ti ${item.icon}`} aria-hidden="true" />
+              <span className="rail-label">{item.label}</span>
             </button>
           ))}
+        </nav>
+
+        <div className="rail-foot">
+          <div className="glass-badge" style={{ padding: "4px 10px", fontSize: "10px" }}>
+            <span className="dot" />
+            <span className="rail-label">Live · AI</span>
+          </div>
         </div>
+      </aside>
 
-        {/* Avatar with dropdown */}
-        <div className="relative" ref={profileRef}>
-          <button
-            onClick={() => setProfileOpen(v => !v)}
-            className="w-[34px] h-[34px] rounded-full flex items-center justify-center text-[12px] font-semibold transition-all"
-            style={{
-              background: initials ? "linear-gradient(135deg,#4f6ef7,#8b5cf6)" : "rgba(255,255,255,0.08)",
-              border: "2px solid rgba(255,255,255,0.12)",
-              color: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            {initials ?? <i className="ti ti-user text-[15px] text-white/40" />}
-          </button>
+      {/* ══════════════ MAIN CANVAS ══════════════ */}
+      <div style={{ minHeight: "100vh" }}>
+        <header className="topbar">
+          <div className="crumb">
+            Finance AI <span style={{ margin: "0 6px", opacity: 0.4 }}>/</span> <b>{activeNav}</b>
+          </div>
 
-          {/* Dropdown */}
-          {profileOpen && (
-            <div style={{
-              position: "absolute", top: "calc(100% + 10px)", right: 0,
-              width: 260, background: "#0d1117",
-              border: "0.5px solid rgba(255,255,255,0.12)",
-              borderRadius: 14, overflow: "hidden",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.6)", zIndex: 200,
-            }}>
-              {/* Header */}
-              <div style={{ padding: "16px 16px 12px", borderBottom: "0.5px solid rgba(255,255,255,0.07)" }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10, marginBottom: 10,
-                  background: initials ? "linear-gradient(135deg,#4f6ef7,#8b5cf6)" : "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 15, fontWeight: 600, color: "#fff",
-                }}>
-                  {initials ?? <i className="ti ti-user" style={{ color: "rgba(255,255,255,0.3)" }} />}
-                </div>
-                {profileSaved ? (
-                  <>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: "#fff" }}>{profileName}</div>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{profileEmail || "No email"}</div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>No profile set up</div>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.22)", marginTop: 2 }}>Fill in your details below</div>
-                  </>
-                )}
-              </div>
+          <div className="u-rel" ref={profileRef}>
+            <button
+              onClick={() => setProfileOpen((v) => !v)}
+              className="avatar-btn"
+              style={{
+                background: initials ? "linear-gradient(140deg,#2bb27f,#1c8563)" : "rgba(236,233,225,0.06)",
+                border: "1.5px solid rgba(236,233,225,0.14)",
+                color: "#0a0d12",
+                cursor: "pointer",
+              }}
+            >
+              {initials ?? <i className="ti ti-user" style={{ fontSize: 14, color: "rgba(236,233,225,0.35)" }} />}
+            </button>
 
-              {/* Edit fields */}
-              <div style={{ padding: "12px 16px", borderBottom: "0.5px solid rgba(255,255,255,0.07)" }}>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: 1, marginBottom: 6 }}>YOUR NAME</div>
-                <input
-                  value={profileName}
-                  onChange={e => setProfileName(e.target.value)}
-                  placeholder="e.g. Priya Sharma"
-                  style={{
-                    width: "100%", padding: "7px 10px", borderRadius: 8, marginBottom: 10,
-                    background: "rgba(255,255,255,0.06)", border: "0.5px solid rgba(255,255,255,0.1)",
-                    color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit",
-                  }}
-                />
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: 1, marginBottom: 6 }}>EMAIL (OPTIONAL)</div>
-                <input
-                  value={profileEmail}
-                  onChange={e => setProfileEmail(e.target.value)}
-                  placeholder="e.g. priya@email.com"
-                  type="email"
-                  style={{
-                    width: "100%", padding: "7px 10px", borderRadius: 8,
-                    background: "rgba(255,255,255,0.06)", border: "0.5px solid rgba(255,255,255,0.1)",
-                    color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit",
-                  }}
-                />
-                <button
-                  onClick={() => { setProfileSaved(true); setProfileOpen(false); }}
-                  style={{
-                    marginTop: 10, width: "100%", padding: "8px",
-                    background: "rgba(79,110,247,0.8)", border: "none", borderRadius: 8,
-                    color: "#fff", fontSize: 13, fontWeight: 500, cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Save Profile
-                </button>
-              </div>
-
-              {/* Sign out */}
-              <div
-                onClick={() => { setProfileSaved(false); setProfileName(""); setProfileEmail(""); setProfileOpen(false); }}
-                style={{
-                  padding: "11px 16px", fontSize: 13,
-                  color: "rgba(244,63,94,0.75)", cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 8,
-                  transition: "background 0.15s",
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(244,63,94,0.07)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-              >
-                <i className="ti ti-logout" /> Sign out
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
-
-      <div id="dashboard-main" className="mx-auto max-w-[1280px] px-10">
-
-        {/* ══════════════════════════════════════════
-            PAGE: OVERVIEW
-        ══════════════════════════════════════════ */}
-        {activeNav === "Overview" && (
-          <>
-            <header className="py-14">
-              <div className="eyebrow mb-6">
-                <span className="eyebrow-dot" />
-                AI-Powered · Live
-              </div>
-              <h1
-                className="font-serif text-[58px] font-normal leading-[1.08] tracking-[-2px]"
-                style={{ fontFamily: "'DM Serif Display', serif" }}
-              >
-                Your finances,{" "}
-                <em className="text-gradient" style={{ fontStyle: "italic" }}>intelligently</em>{" "}
-                simplified.
-              </h1>
-              <p className="mt-5 text-[18px] text-white/40">
-                Upload a bank statement and let AI handle the heavy lifting.
-              </p>
-            </header>
-
-            {/* ── KPI CARDS — fixed spacing ── */}
-            <section className="grid grid-cols-3 gap-5 mb-6">
-              <div className="metric-card metric-card-blue" style={{ padding: "26px 28px" }}>
-                <div className="metric-icon metric-icon-blue" style={{ marginBottom: 18 }}>₹</div>
-                <p className="text-[11px] text-white/35 mb-3 tracking-wide uppercase">Total Spending</p>
-                <p className="text-[36px] font-semibold tracking-[-1.5px] leading-none">
-                  ₹{rows.length > 0 ? formatAmount(total) : "0"}
-                </p>
-                <div style={{ marginTop: 14, minHeight: 22 }}>
-                  {rows.length > 0 && <span className="badge badge-warn">↑ from last month</span>}
-                </div>
-              </div>
-
-              <div className="metric-card metric-card-purple" style={{ padding: "26px 28px" }}>
-                <div className="metric-icon metric-icon-purple" style={{ marginBottom: 18 }}>
-                  <i className="ti ti-arrows-left-right" aria-hidden="true" />
-                </div>
-                <p className="text-[11px] text-white/35 mb-3 tracking-wide uppercase">Transactions</p>
-                <p className="text-[36px] font-semibold tracking-[-1.5px] leading-none">
-                  {rows.length}
-                </p>
-                <div style={{ marginTop: 14, minHeight: 22 }}>
-                  {rows.length > 0 && <span className="badge badge-ok">✓ Loaded</span>}
-                </div>
-              </div>
-
-              <div className="metric-card metric-card-green" style={{ padding: "26px 28px" }}>
-                <div className="metric-icon metric-icon-green" style={{ marginBottom: 18 }}>
-                  <i className="ti ti-bell" aria-hidden="true" />
-                </div>
-                <p className="text-[11px] text-white/35 mb-3 tracking-wide uppercase">High-value Alerts</p>
-                <p className="text-[36px] font-semibold tracking-[-1.5px] leading-none">
-                  {alerts.length}
-                </p>
-                <div style={{ marginTop: 14, minHeight: 22 }}>
-                  {alerts.length > 0
-                    ? <span className="badge badge-alert">⚠ Needs review</span>
-                    : rows.length > 0 && <span className="badge badge-ok">✓ All clear</span>}
-                </div>
-              </div>
-            </section>
-
-            {/* ── MAIN TWO-COL GRID ── */}
-            <div className="grid gap-5" style={{ gridTemplateColumns: "1fr 340px" }}>
-
-              {/* LEFT */}
-              <div className="flex flex-col gap-5">
-                {/* Upload */}
-                <div>
-                  <p className="section-label mb-3">Upload Statement</p>
-                  <label>
-                    <div
-                      className={`upload-zone text-center ${isDragging ? "border-[rgba(79,110,247,0.7)] bg-[rgba(79,110,247,0.1)]" : ""}`}
-                      style={{ padding: "36px 28px" }}
-                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                      onDragLeave={() => setIsDragging(false)}
-                      onDrop={handleDrop}
-                    >
-                      <div className="upload-icon-wrap mb-4">
-                        <i className="ti ti-cloud-upload text-[#7b9bff] text-[22px]" aria-hidden="true" />
-                      </div>
-                      <p className="text-[15px] font-medium text-white/80 mb-2">Drop your CSV file here</p>
-                      <p className="text-[13px] text-white/30 mb-5">Supports HDFC · ICICI · SBI · Axis bank formats</p>
-                      <span className="inline-block px-5 py-2 rounded-xl bg-[rgba(79,110,247,0.15)] border border-[rgba(79,110,247,0.35)] text-[13px] font-medium text-[#7b9bff] hover:bg-[rgba(79,110,247,0.25)] transition-all cursor-pointer">
-                        Browse files
-                      </span>
-                      <input type="file" accept=".csv" onChange={handleUpload} className="hidden" />
-                    </div>
-                  </label>
-                </div>
-
-                {/* Transactions list */}
-                {rows.length > 0 && (
-                  <div className="glass-card">
-                    <div className="flex items-center justify-between px-7 py-5 border-b border-white/[0.06]">
-                      <span className="text-[15px] font-medium text-white/90">Recent Transactions</span>
-                      <div className="flex gap-2">
-                        {FILTER_ITEMS.map((f) => (
-                          <button
-                            key={f}
-                            onClick={() => setActiveFilter(f)}
-                            className={`filter-pill ${activeFilter === f ? "active" : ""}`}
-                          >{f}</button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{ maxHeight: 420, overflowY: "auto" }}>
-                      {filteredRows.map((row, i) => (
-                        <div key={i} className="tx-row">
-                          <div className="flex items-center gap-4">
-                            <div className={`tx-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
-                              {row.merchant?.charAt(0)?.toUpperCase() ?? "?"}
-                            </div>
-                            <div>
-                              <p className="text-[14px] font-medium text-white/85">{row.merchant}</p>
-                              <p className="text-[12px] text-white/30 mt-0.5">{row.date}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[15px] font-medium text-white/90 tabular-nums">₹{formatAmount(row.amount)}</p>
-                            <span className={`badge mt-1 ${row.amount > 1000 ? "badge-alert" : "badge-ok"}`}>
-                              {row.amount > 1000 ? "⚠ High value" : "✓ Normal"}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                      {filteredRows.length === 0 && (
-                        <div className="py-10 text-center text-white/30 text-[14px]">
-                          No transactions match this filter.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {rows.length === 0 && (
-                  <div className="glass-card" style={{ padding: "40px 28px", textAlign: "center" }}>
-                    <div className="text-[32px] mb-4">📊</div>
-                    <p className="text-[16px] font-medium text-white/50 mb-2">No data yet</p>
-                    <p className="text-[13px] text-white/25">Upload a CSV statement above to see your transactions</p>
-                  </div>
-                )}
-              </div>
-
-              {/* RIGHT SIDEBAR */}
-              <div className="flex flex-col gap-5">
-
-                {/* Spending Breakdown */}
-                <div className="glass-card" style={{ padding: "22px 24px" }}>
-                  <p className="section-label mb-5">Spending Breakdown</p>
-                  <div className="flex items-center gap-5">
-                    <svg width="76" height="76" viewBox="0 0 88 88" aria-hidden="true">
-                      <circle cx="44" cy="44" r="34" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
-                      <circle cx="44" cy="44" r="34" fill="none" stroke="#4f6ef7" strokeWidth="12" strokeDasharray="107 107" strokeDashoffset="0" strokeLinecap="round" transform="rotate(-90 44 44)" />
-                      <circle cx="44" cy="44" r="34" fill="none" stroke="#8b5cf6" strokeWidth="12" strokeDasharray="64 150" strokeDashoffset="-107" strokeLinecap="round" transform="rotate(-90 44 44)" />
-                      <circle cx="44" cy="44" r="34" fill="none" stroke="#34d399" strokeWidth="12" strokeDasharray="43 171" strokeDashoffset="-171" strokeLinecap="round" transform="rotate(-90 44 44)" />
-                    </svg>
-                    <div className="flex-1">
-                      {[
-                        { color: "#4f6ef7", label: "Shopping", val: "₹41k" },
-                        { color: "#8b5cf6", label: "Food", val: "₹26k" },
-                        { color: "#34d399", label: "Travel", val: "₹17k" },
-                      ].map(({ color, label, val }) => (
-                        <div key={label} className="flex items-center gap-2 mb-3">
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
-                          <span className="text-[12px] text-white/45 flex-1">{label}</span>
-                          <span className="text-[12px] font-medium text-white/80">{val}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-               {/* Weekly Trend (Dynamic) */}
-                <div className="glass-card" style={{ padding: "22px 24px" }}>
-                  <p className="section-label mb-5">Weekly Trend</p>
-                  <div className="flex items-end gap-2" style={{ height: "80px" }}>
-                    {weeklyTrend.map(({ day, h, highlight, amount }) => (
-                      <div 
-                        key={day} 
-                        className="flex-1 flex flex-col items-center gap-2 group relative cursor-pointer"
-                        title={`Spent: ₹${formatAmount(amount)}`}
-                      >
-                        {/* Tooltip on hover */}
-                        <div className="absolute -top-7 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-[10px] py-1 px-2 rounded border border-white/10 whitespace-nowrap z-10 pointer-events-none">
-                          ₹{formatAmount(amount)}
-                        </div>
-                        
-                        <div
-                          className="w-full rounded-t-[5px] rounded-b-[3px] transition-all hover:opacity-100"
-                          style={{
-                            height: `${h}px`,
-                            background: highlight ? "rgba(79,110,247,0.65)" : "rgba(79,110,247,0.15)",
-                            border: `0.5px solid ${highlight ? "rgba(79,110,247,0.8)" : "rgba(79,110,247,0.25)"}`,
-                          }}
-                        />
-                        <span className={`text-[10px] ${highlight ? "text-[#7b9bff] font-medium" : "text-white/25"}`}>{day}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* AI Insights — INTERACTIVE */}
-                <div className="glass-card" style={{ padding: "22px 24px" }}>
-                  <p className="section-label mb-4">Ask Financial AI</p>
-
-                  {/* Quick click options */}
-                  <div className="mb-4">
-                    {AI_PROMPTS.map((prompt) => (
-                      <div
-                        key={prompt}
-                        className="ai-chip"
-                        style={{ marginBottom: 8 }}
-                        onClick={() => runAI(prompt)}
-                      >
-                        <span className="text-[#7b9bff] text-[12px] flex-shrink-0">✦</span>
-                        <span className="text-[12px] text-white/55">{prompt}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Interactive Search Box */}
-                  <form 
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (!customQuery.trim()) return;
-                      runAI(customQuery);
-                      setCustomQuery("");
+            {profileOpen && (
+              <div className="profile-menu">
+                <div style={{ padding: "16px 16px 12px", borderBottom: "0.5px solid var(--line)" }}>
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      marginBottom: 10,
+                      background: initials ? "linear-gradient(140deg,#2bb27f,#1c8563)" : "rgba(236,233,225,0.05)",
+                      border: "1px solid var(--line)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: "#0a0d12",
                     }}
-                    className="flex gap-2 mb-4"
                   >
-                    <input
-                      type="text"
-                      placeholder="Ask AI about your expenses..."
-                      value={customQuery}
-                      onChange={(e) => setCustomQuery(e.target.value)}
-                      className="tx-search"
-                      style={{ width: "100%", fontSize: "12px" }}
-                      disabled={aiLoading}
-                    />
-                    <button
-                      type="submit"
-                      disabled={aiLoading || !customQuery.trim()}
-                      style={{
-                        padding: "0 14px",
-                        background: "rgba(79,110,247,0.15)",
-                        border: "1px solid rgba(79,110,247,0.35)",
-                        borderRadius: "10px",
-                        color: "#7b9bff",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontFamily: "inherit",
-                        transition: "all 0.2s"
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "rgba(79,110,247,0.25)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "rgba(79,110,247,0.15)"}
-                    >
-                      Ask
-                    </button>
-                  </form>
-
-                  {/* Result box */}
-                  {(aiLoading || aiResult) && (
-                    <div style={{
-                      background: "rgba(79,110,247,0.07)",
-                      border: "0.5px solid rgba(79,110,247,0.2)",
-                      borderRadius: 12,
-                      padding: "14px 16px",
-                    }}>
-                      {aiLoading ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div style={{
-                            width: 16, height: 16, borderRadius: "50%",
-                            border: "2px solid rgba(79,110,247,0.3)",
-                            borderTopColor: "#7b9bff",
-                            animation: "spin 0.7s linear infinite",
-                            flexShrink: 0,
-                          }} />
-                          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-                            Analyzing transactions…
-                          </span>
-                        </div>
-                      ) : (
-                        <>
-                          <p style={{ fontSize: 10, color: "rgba(79,110,247,0.8)", fontWeight: 600, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>
-                            ✦ Query: {aiPrompt}
-                          </p>
-                          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-                            {aiResult}
-                          </p>
-                        </>
-                      )}
-                    </div>
+                    {initials ?? <i className="ti ti-user" style={{ color: "rgba(236,233,225,0.3)" }} />}
+                  </div>
+                  {profileSaved ? (
+                    <>
+                      <div style={{ fontSize: 13.5, fontWeight: 500 }}>{profileName}</div>
+                      <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 2 }}>{profileEmail || "No email"}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 13, color: "var(--muted)" }}>No profile set up</div>
+                      <div style={{ fontSize: 11, color: "var(--muted-2)", marginTop: 2 }}>Fill in your details below</div>
+                    </>
                   )}
                 </div>
-                {/* Quick Stats */}
-                {rows.length > 0 && (
-                  <div className="glass-card" style={{ padding: "22px 24px" }}>
-                    <p className="section-label mb-4">Quick Stats</p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[13px] text-white/40">Avg. transaction</span>
-                        <span className="text-[13px] font-medium text-white/85 tabular-nums">₹{formatAmount(total / rows.length)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[13px] text-white/40">Largest transaction</span>
-                        <span className="text-[13px] font-medium text-white/85 tabular-nums">₹{formatAmount(Math.max(...rows.map(r => r.amount)))}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[13px] text-white/40">Alert rate</span>
-                        <span className="text-[13px] font-medium text-[#fb7185] tabular-nums">{Math.round((alerts.length / rows.length) * 100)}%</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
 
-        {/* ══════════════════════════════════════════
-            PAGE: TRANSACTIONS
-        ══════════════════════════════════════════ */}
-        {activeNav === "Transactions" && (
-          <div style={{ paddingTop: 40 }}>
-            <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 36, fontWeight: 400, letterSpacing: -1, marginBottom: 6 }}>
-              All Transactions
-            </h2>
-            <p className="text-white/35 text-[14px] mb-8">Your full transaction history</p>
-
-            {rows.length === 0 ? (
-              <div className="glass-card" style={{ padding: "60px 28px", textAlign: "center" }}>
-                <div style={{ fontSize: 36, marginBottom: 16 }}>📂</div>
-                <p className="text-[16px] font-medium text-white/50 mb-2">No transactions loaded</p>
-                <p className="text-[13px] text-white/25">Go to Overview and upload a CSV file first</p>
-              </div>
-            ) : (
-              <div className="glass-card">
-                <div className="flex items-center justify-between px-7 py-5 border-b border-white/[0.06]">
-                  <span className="text-[15px] font-medium text-white/90">{rows.length} transactions</span>
-                  <div className="flex gap-2">
-                    {FILTER_ITEMS.map(f => (
-                      <button key={f} onClick={() => setActiveFilter(f)} className={`filter-pill ${activeFilter === f ? "active" : ""}`}>{f}</button>
-                    ))}
-                  </div>
+                <div style={{ padding: "12px 16px", borderBottom: "0.5px solid var(--line)" }}>
+                  <div style={{ fontSize: 10, color: "var(--muted-2)", letterSpacing: 1, marginBottom: 6 }}>YOUR NAME</div>
+                  <input
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="e.g. Priya Sharma"
+                    className="ai-input"
+                    style={{ marginBottom: 10, fontSize: 12.5 }}
+                  />
+                  <div style={{ fontSize: 10, color: "var(--muted-2)", letterSpacing: 1, marginBottom: 6 }}>EMAIL (OPTIONAL)</div>
+                  <input
+                    value={profileEmail}
+                    onChange={(e) => setProfileEmail(e.target.value)}
+                    placeholder="e.g. priya@email.com"
+                    type="email"
+                    className="ai-input"
+                    style={{ fontSize: 12.5 }}
+                  />
+                  <button
+                    onClick={() => {
+                      localStorage.setItem("finance_ai_profile_name", profileName);
+                      localStorage.setItem("finance_ai_profile_email", profileEmail);
+                      setProfileSaved(true);
+                      setProfileOpen(false);
+                    }}
+                    style={{
+                      marginTop: 10,
+                      width: "100%",
+                      padding: "9px",
+                      background: "var(--green)",
+                      border: "none",
+                      borderRadius: 8,
+                      color: "#0a0d12",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Save profile
+                  </button>
                 </div>
-                <div style={{ maxHeight: "calc(100vh - 280px)", overflowY: "auto" }}>
-                  {filteredRows.map((row, i) => (
-                    <div key={i} className="tx-row">
-                      <div className="flex items-center gap-4">
-                        <div className={`tx-avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}`}>
-                          {row.merchant?.charAt(0)?.toUpperCase() ?? "?"}
-                        </div>
-                        <div>
-                          <p className="text-[14px] font-medium text-white/85">{row.merchant}</p>
-                          <p className="text-[12px] text-white/30 mt-0.5">{row.date} · <span style={{ color: "#7b9bff", fontSize: 11 }}>{categorise(row.merchant)}</span></p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[15px] font-medium text-white/90 tabular-nums">₹{formatAmount(row.amount)}</p>
-                        <span className={`badge mt-1 ${row.amount > 1000 ? "badge-alert" : "badge-ok"}`}>
-                          {row.amount > 1000 ? "⚠ High value" : "✓ Normal"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+
+                <div
+                  onClick={() => {
+                    localStorage.removeItem("finance_ai_profile_name");
+                    localStorage.removeItem("finance_ai_profile_email");
+                    setProfileSaved(false);
+                    setProfileName("");
+                    setProfileEmail("");
+                    setProfileOpen(false);
+                  }}
+                  style={{
+                    padding: "12px 16px",
+                    fontSize: 13,
+                    color: "var(--rose)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <i className="ti ti-trash" /> Clear profile data
                 </div>
               </div>
             )}
           </div>
-        )}
+        </header>
 
-        {/* ══════════════════════════════════════════
-            PAGE: ANALYTICS
-        ══════════════════════════════════════════ */}
-        {activeNav === "Analytics" && (
-          <div style={{ paddingTop: 40 }}>
-            <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 36, fontWeight: 400, letterSpacing: -1, marginBottom: 6 }}>
-              Analytics
-            </h2>
-            <p className="text-white/35 text-[14px] mb-8">AI-powered breakdown of your spending</p>
-
-            {rows.length === 0 ? (
-              <div className="glass-card" style={{ padding: "60px 28px", textAlign: "center" }}>
-                <div style={{ fontSize: 36, marginBottom: 16 }}>📊</div>
-                <p className="text-[16px] font-medium text-white/50 mb-2">No data to analyse</p>
-                <p className="text-[13px] text-white/25">Upload a CSV on the Overview page to see analytics</p>
-              </div>
-            ) : (
-              <>
-                {/* Summary strip */}
-                <div className="grid grid-cols-3 gap-5 mb-6">
-                  {[
-                    { label: "Total Spend", value: `₹${formatAmount(total)}` },
-                    { label: "Avg Transaction", value: `₹${formatAmount(total / rows.length)}` },
-                    { label: "High-value", value: `${alerts.length} txns` },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="glass-card" style={{ padding: "20px 24px" }}>
-                      <p className="text-[11px] text-white/35 uppercase tracking-wide mb-2">{label}</p>
-                      <p style={{ fontSize: 26, fontWeight: 600, letterSpacing: -0.5 }}>{value}</p>
+        <div id="dashboard-main" className="page-container">
+          {/* ══════════════════ OVERVIEW ══════════════════ */}
+          {activeNav === "Overview" && (
+            <>
+              <div style={{ paddingTop: 44 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
+                  <div className="glass-badge">
+                    <span className="dot" />
+                    Statement reconciled · real time
+                  </div>
+                  {currentTime && (
+                    <div style={{ fontSize: 13, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>
+                      {salutation} · {currentTime}
                     </div>
-                  ))}
+                  )}
+                </div>
+                <h1 className="font-display" style={{ fontSize: 48, lineHeight: 1.08, letterSpacing: "-1px", fontWeight: 400 }}>
+                  Your finances, read like{" "}
+                  <em style={{ fontStyle: "italic", color: "var(--green)" }}>a ledger</em>, understood like{" "}
+                  <em style={{ fontStyle: "italic", color: "var(--brass)" }}>an analyst</em>.
+                </h1>
+                <p style={{ marginTop: 16, fontSize: 16, color: "var(--muted)", maxWidth: 560 }}>
+                  Upload a bank statement and let the model reconcile, categorise, and flag it for you.
+                </p>
+              </div>
+
+              <div className="ledger-rule"><span>Snapshot</span></div>
+
+              <section className="grid-3-resp">
+                <div className="kpi kpi-green">
+                  <div className="kpi-icon">$</div>
+                  <p className="section-label mb-2">Total Spending</p>
+                  <p className="kpi-figure">${rows.length > 0 ? formatAmount(total) : "0"}</p>
+                  <div style={{ marginTop: 14, minHeight: 22 }}>
+                    {rows.length > 0 && <span className="kpi-delta warn">↑ vs. last statement</span>}
+                  </div>
                 </div>
 
-                {/* Category breakdown */}
-                <div className="glass-card" style={{ padding: "24px 28px", marginBottom: 20 }}>
-                  <p className="section-label mb-5">Spending by Category</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {catTotals.map(([cat, amt]) => {
-                      const pct = Math.round((amt / total) * 100);
-                      const colors: Record<string, string> = {
-                        Food: "#f59e0b", Travel: "#34d399", Shopping: "#4f6ef7",
-                        Bills: "#8b5cf6", Entertainment: "#ec4899",
-                        Investment: "#22c55e", Healthcare: "#ef4444", Other: "#6b7280",
-                      };
+                <div className="kpi kpi-brass">
+                  <div className="kpi-icon"><i className="ti ti-arrows-left-right" aria-hidden="true" /></div>
+                  <p className="section-label mb-2">Transactions</p>
+                  <p className="kpi-figure">{rows.length}</p>
+                  <div style={{ marginTop: 14, minHeight: 22 }}>
+                    {rows.length > 0 && <span className="kpi-delta up">✓ Reconciled</span>}
+                  </div>
+                </div>
+
+                <div className="kpi kpi-rose">
+                  <div className="kpi-icon"><i className="ti ti-bell" aria-hidden="true" /></div>
+                  <p className="section-label mb-2">High-value Alerts</p>
+                  <p className="kpi-figure">{alerts.length}</p>
+                  <div style={{ marginTop: 14, minHeight: 22 }}>
+                    {alerts.length > 0 ? (
+                      <span className="kpi-delta bad">⚠ Needs review</span>
+                    ) : (
+                      rows.length > 0 && <span className="kpi-delta up">✓ All clear</span>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <div className="dash-grid">
+                {/* LEFT COLUMN */}
+                <div className="u-col u-gap-5 u-min-w-0">
+                  <div>
+                    <p className="section-label mb-3">Upload Statement</p>
+                    <label>
+                      <div
+                        className={`dropzone ${isDragging ? "dragging" : ""}`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDragging(true);
+                        }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleDrop}
+                      >
+                        <div className="dropzone-icon">
+                          <i className="ti ti-cloud-upload" aria-hidden="true" />
+                        </div>
+                        <p style={{ fontSize: 15, fontWeight: 500, color: "var(--text)", marginBottom: 6 }}>Drop your CSV file here</p>
+                        <p style={{ fontSize: 12.5, color: "var(--muted-2)", marginBottom: 18 }}>Supports HDFC · ICICI · SBI · Axis bank formats</p>
+                        <span className="btn-browse">Browse files</span>
+                        <input type="file" accept=".csv" onChange={handleUpload} className="u-hidden" />
+                      </div>
+                    </label>
+                  </div>
+
+                  {rows.length > 0 ? (
+                    <div className="panel">
+                      <div className="panel-head">
+                        <span style={{ fontSize: 14.5, fontWeight: 500, display: "flex", alignItems: "center", gap: 10 }}>
+                          {rows.length} transactions
+                          <button 
+                            onClick={clearData}
+                            style={{ 
+                              fontSize: 11, 
+                              background: "rgba(226,104,94,0.12)", 
+                              color: "var(--rose)", 
+                              border: "0.5px solid rgba(226,104,94,0.25)", 
+                              borderRadius: 6, 
+                              padding: "2px 6px",
+                              cursor: "pointer"
+                            }}
+                          >
+                            Clear
+                          </button>
+                        </span>
+                        <div className="filter-row">
+                          {FILTER_ITEMS.map((f) => (
+                            <button key={f} onClick={() => setActiveFilter(f)} className={`chip ${activeFilter === f ? "active" : ""}`}>
+                              {f}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="thin-scroll" style={{ maxHeight: 420, overflowY: "auto" }}>
+                        {filteredRows.map((row, i) => {
+                          const cat = categorise(row.merchant);
+                          const color = CATEGORY_COLORS[cat];
+                          return (
+                            <div key={i} className="ledger-row">
+                              <div className="ledger-left">
+                                <div className="ledger-avatar" style={{ background: `${color}22`, color }}>
+                                  {row.merchant?.charAt(0)?.toUpperCase() ?? "?"}
+                                </div>
+                                <div className="ledger-name-wrap">
+                                  <p style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text)" }} className="u-truncate">{row.merchant}</p>
+                                  <p style={{ fontSize: 11.5, color: "var(--muted-2)", marginTop: 2 }}>{row.date}</p>
+                                </div>
+                              </div>
+                              <div className="ledger-right">
+                                <p className="figure" style={{ fontSize: 14, color: "var(--text)" }}>${formatAmount(row.amount)}</p>
+                                <span className={`tag mt-1 ${row.amount > 1000 ? "tag-alert" : "tag-ok"}`}>
+                                  {row.amount > 1000 ? "High" : "Normal"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {filteredRows.length === 0 && (
+                          <div style={{ padding: "40px 0", textAlign: "center", color: "var(--muted-2)", fontSize: 13.5 }}>
+                            No transactions match this filter.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="empty-state">
+                      <div className="empty-glyph"><i className="ti ti-file-off" /></div>
+                      <p style={{ fontSize: 15, fontWeight: 500, color: "var(--muted)", marginBottom: 6 }}>No data yet</p>
+                      <p style={{ fontSize: 12.5, color: "var(--muted-2)", marginBottom: 16 }}>Upload a CSV statement above to see your transactions</p>
+                      <button 
+                        onClick={loadDemoData}
+                        className="btn-browse"
+                        style={{ border: "1px solid var(--brass-line)", color: "var(--brass)", background: "var(--brass-soft)" }}
+                      >
+                        ✦ Load Demo Data
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* RIGHT SIDEBAR */}
+                <div className="u-col u-gap-5 u-min-w-0">
+                  <div className="panel" style={{ padding: "22px 22px" }}>
+                    <p className="section-label mb-5">Spending Breakdown</p>
+                    {rows.length > 0 ? (
+                      <div className="donut-wrap">
+                        <svg width="76" height="76" viewBox="0 0 88 88" aria-hidden="true" className="u-shrink-0">
+                          <circle cx="44" cy="44" r="34" fill="none" stroke="rgba(236,233,225,0.06)" strokeWidth="12" />
+                          {donutSegments.map((seg) => (
+                            <circle
+                              key={seg.cat}
+                              cx="44" cy="44" r="34" fill="none"
+                              stroke={seg.color} strokeWidth="12"
+                              strokeDasharray={seg.dasharray}
+                              strokeDashoffset={seg.dashoffset}
+                              strokeLinecap="butt"
+                              transform="rotate(-90 44 44)"
+                            />
+                          ))}
+                        </svg>
+                        <div className="donut-legend">
+                          {donutSegments.map((seg) => (
+                            <div key={seg.cat} className="donut-legend-row">
+                              <span className="dot-2" style={{ background: seg.color }} />
+                              <span style={{ fontSize: 12, color: "var(--muted)" }} className="legend-label">{seg.cat}</span>
+                              <span className="figure" style={{ fontSize: 12, color: "var(--text)" }}>${formatAmount(seg.amt)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 12.5, color: "var(--muted-2)" }}>Upload a statement to see category breakdown.</p>
+                    )}
+                  </div>
+
+                  <div className="panel" style={{ padding: "22px 22px" }}>
+                    <p className="section-label mb-5">Weekly Trend</p>
+                    <div className="trend-row">
+                      {weeklyTrend.map(({ day, h, highlight, amount }) => (
+                        <div key={day} className="trend-col" title={`Spent: $${formatAmount(amount)}`}>
+                          <div
+                            className="tooltip-pop"
+                          >
+                            ${formatAmount(amount)}
+                          </div>
+                          <div
+                            className="trend-bar"
+                            style={{
+                              height: `${h}px`,
+                              background: highlight ? "rgba(43,178,127,0.7)" : "rgba(43,178,127,0.16)",
+                              border: `0.5px solid ${highlight ? "rgba(43,178,127,0.85)" : "rgba(43,178,127,0.28)"}`,
+                            }}
+                          />
+                          <span style={{ fontSize: 10, color: highlight ? "var(--green)" : "var(--muted-2)", fontWeight: highlight ? 600 : 400 }}>{day}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="panel" style={{ padding: "22px 22px" }}>
+                    <p className="section-label mb-4">Ask Financial AI</p>
+                    <div className="ai-list">
+                      {AI_PROMPTS.map((prompt) => (
+                        <div key={prompt} className="ai-suggest" onClick={() => runAI(prompt)}>
+                          <span style={{ color: "var(--brass)", fontSize: 12, flexShrink: 0 }}>✦</span>
+                          <span>{prompt}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!customQuery.trim()) return;
+                        runAI(customQuery);
+                        setCustomQuery("");
+                      }}
+                      className="ai-form-row"
+                    >
+                      <input
+                        type="text"
+                        placeholder="Ask AI about your expenses…"
+                        value={customQuery}
+                        onChange={(e) => setCustomQuery(e.target.value)}
+                        className="ai-input"
+                        disabled={aiLoading}
+                      />
+                      <button type="submit" disabled={aiLoading || !customQuery.trim()} className="ai-send">
+                        Ask
+                      </button>
+                    </form>
+
+                    {(aiLoading || aiResult) && (
+                      <div className="ai-answer">
+                        {aiLoading ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div className="spinner" />
+                            <span style={{ fontSize: 12, color: "var(--muted)" }}>Analysing transactions…</span>
+                          </div>
+                        ) : (
+                          <>
+                            <p style={{ fontSize: 10, color: "var(--brass)", fontWeight: 600, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>
+                              ✦ {aiPrompt}
+                            </p>
+                            <p style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{aiResult}</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {rows.length > 0 && (
+                    <div className="panel" style={{ padding: "22px 22px" }}>
+                      <p className="section-label mb-4">Quick Stats</p>
+                      <div className="stats-col">
+                        <div className="stat-row">
+                          <span style={{ fontSize: 12.5, color: "var(--muted)" }}>Avg. transaction</span>
+                          <span className="figure" style={{ fontSize: 12.5, color: "var(--text)" }}>${formatAmount(total / rows.length)}</span>
+                        </div>
+                        <div className="stat-row">
+                          <span style={{ fontSize: 12.5, color: "var(--muted)" }}>Largest transaction</span>
+                          <span className="figure" style={{ fontSize: 12.5, color: "var(--text)" }}>${formatAmount(Math.max(...rows.map((r) => r.amount)))}</span>
+                        </div>
+                        <div className="stat-row">
+                          <span style={{ fontSize: 12.5, color: "var(--muted)" }}>Alert rate</span>
+                          <span className="figure" style={{ fontSize: 12.5, color: "var(--rose)" }}>{Math.round((alerts.length / rows.length) * 100)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ══════════════════ TRANSACTIONS ══════════════════ */}
+          {activeNav === "Transactions" && (
+            <div style={{ paddingTop: 44 }}>
+              <h2 className="font-display" style={{ fontSize: 34, fontWeight: 400, letterSpacing: "-0.5px", marginBottom: 6 }}>All Transactions</h2>
+              <p style={{ color: "var(--muted-2)", fontSize: 13.5, marginBottom: 24 }}>Your full transaction ledger</p>
+
+              {rows.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-glyph"><i className="ti ti-folder-off" /></div>
+                  <p style={{ fontSize: 15, fontWeight: 500, color: "var(--muted)", marginBottom: 6 }}>No transactions loaded</p>
+                  <p style={{ fontSize: 12.5, color: "var(--muted-2)" }}>Go to Overview and upload a CSV file first</p>
+                </div>
+              ) : (
+                <div className="panel">
+                  <div className="panel-head">
+                    <span style={{ fontSize: 14.5, fontWeight: 500 }}>{rows.length} transactions</span>
+                    <div className="filter-row">
+                      {FILTER_ITEMS.map((f) => (
+                        <button key={f} onClick={() => setActiveFilter(f)} className={`chip ${activeFilter === f ? "active" : ""}`}>{f}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="thin-scroll" style={{ maxHeight: "calc(100vh - 280px)", overflowY: "auto" }}>
+                    {filteredRows.map((row, i) => {
+                      const cat = categorise(row.merchant);
+                      const color = CATEGORY_COLORS[cat];
                       return (
-                        <div key={cat}>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-[13px] text-white/70">{cat}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[12px] text-white/35">{pct}%</span>
-                              <span className="text-[13px] font-medium text-white/85 tabular-nums">₹{formatAmount(amt)}</span>
+                        <div key={i} className="ledger-row">
+                          <div className="ledger-left">
+                            <div className="ledger-avatar" style={{ background: `${color}22`, color }}>
+                              {row.merchant?.charAt(0)?.toUpperCase() ?? "?"}
+                            </div>
+                            <div className="ledger-name-wrap">
+                              <p style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text)" }} className="u-truncate">{row.merchant}</p>
+                              <p style={{ fontSize: 11.5, color: "var(--muted-2)", marginTop: 2 }}>
+                                {row.date} · <span style={{ color, fontSize: 11 }}>{cat}</span>
+                              </p>
                             </div>
                           </div>
-                          <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 4 }}>
-                            <div style={{ height: 5, borderRadius: 4, width: `${pct}%`, background: colors[cat] || "#6b7280" }} />
+                          <div className="ledger-right">
+                            <p className="figure" style={{ fontSize: 14, color: "var(--text)" }}>${formatAmount(row.amount)}</p>
+                            <span className={`tag mt-1 ${row.amount > 1000 ? "tag-alert" : "tag-ok"}`}>{row.amount > 1000 ? "High" : "Normal"}</span>
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════
-            PAGE: REPORTS
-        ══════════════════════════════════════════ */}
-        {activeNav === "Reports" && (
-          <div style={{ paddingTop: 40 }}>
-            <h2 style={{ fontFamily: "'DM Serif Display',serif", fontSize: 36, fontWeight: 400, letterSpacing: -1, marginBottom: 6 }}>
-              Reports
-            </h2>
-            <p className="text-white/35 text-[14px] mb-8">Download and share your financial data</p>
-
-            <div className="glass-card">
-              {[
-                { 
-                  icon: "ti-file-analytics", color: "#7b9bff", bg: "rgba(79,110,247,0.15)", 
-                  name: "Monthly Spending Summary", meta: "Auto-generated · PDF", 
-                  action: downloadPDF
-                },
-                { 
-                  icon: "ti-chart-pie", color: "#c4b5fd", bg: "rgba(139,92,246,0.15)", 
-                  name: "Category Analysis Report", meta: "Breakdown by category · PDF",
-                  action: () => alert("Coming soon!") 
-                },
-                { 
-                  icon: "ti-alert-triangle", color: "#fb7185", bg: "rgba(244,63,94,0.12)", 
-                  name: "Anomaly & Fraud Alert Report", meta: `${alerts.length} alerts flagged`,
-                  action: () => alert("Coming soon!") 
-                },
-                { 
-                  icon: "ti-download", color: "#6ee7b7", bg: "rgba(52,211,153,0.1)", 
-                  name: "Export Transactions (CSV)", meta: `${rows.length} transactions ready`,
-                  action: downloadPDF
-                },
-              ].map(({ icon, color, bg, name, meta, action }) => (
-                <div
-                  key={name}
-                  onClick={action}
-                  className="flex items-center gap-5 border-b border-white/[0.05] transition-all cursor-pointer hover:bg-white/[0.05]"
-                  style={{ padding: "20px 28px" }}
-                >
-                  <div style={{ width: 42, height: 42, borderRadius: 12, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 18, color }}>
-                    <i className={`ti ${icon}`} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[14px] font-medium text-white/85">{name}</p>
-                    <p className="text-[12px] text-white/30 mt-1">{meta}</p>
-                  </div>
-                  <span className={`badge ${rows.length > 0 ? 'badge-ok' : 'bg-white/10 text-white/40'}`}>
-                    {rows.length > 0 ? 'Ready' : 'No Data'}
-                  </span>
-                </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="h-20" />
+          {/* ══════════════════ ANALYTICS ══════════════════ */}
+          {activeNav === "Analytics" && (
+            <div style={{ paddingTop: 44 }}>
+              <h2 className="font-display" style={{ fontSize: 34, fontWeight: 400, letterSpacing: "-0.5px", marginBottom: 6 }}>Analytics</h2>
+              <p style={{ color: "var(--muted-2)", fontSize: 13.5, marginBottom: 24 }}>AI-powered breakdown of your spending</p>
+
+              {rows.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-glyph"><i className="ti ti-chart-donut" /></div>
+                  <p style={{ fontSize: 15, fontWeight: 500, color: "var(--muted)", marginBottom: 6 }}>No data to analyse</p>
+                  <p style={{ fontSize: 12.5, color: "var(--muted-2)" }}>Upload a CSV on the Overview page to see analytics</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid-3-resp">
+                    {[
+                      { label: "Total Spend", value: `$${formatAmount(total)}` },
+                      { label: "Avg Transaction", value: `$${formatAmount(total / rows.length)}` },
+                      { label: "High-value", value: `${alerts.length} txns` },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="panel" style={{ padding: "20px 22px" }}>
+                        <p className="section-label mb-3">{label}</p>
+                        <p className="figure" style={{ fontSize: 24, color: "var(--text)" }}>{value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="panel" style={{ padding: "24px 26px" }}>
+                    <p className="section-label mb-5">Spending by Category</p>
+                    <div className="cat-list">
+                      {catTotals.map(([cat, amt]) => {
+                        const pct = Math.round((amt / total) * 100);
+                        const color = CATEGORY_COLORS[cat] || "#6b7280";
+                        return (
+                          <div key={cat}>
+                            <div className="cat-row-head">
+                              <span style={{ fontSize: 13, color: "var(--muted)" }}>{cat}</span>
+                              <div className="cat-row-right">
+                                <span className="font-mono" style={{ fontSize: 11.5, color: "var(--muted-2)" }}>{pct}%</span>
+                                <span className="figure" style={{ fontSize: 13, color: "var(--text)" }}>${formatAmount(amt)}</span>
+                              </div>
+                            </div>
+                            <div style={{ height: 5, background: "rgba(236,233,225,0.06)", borderRadius: 4 }}>
+                              <div style={{ height: 5, borderRadius: 4, width: `${pct}%`, background: color }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ══════════════════ REPORTS ══════════════════ */}
+          {activeNav === "Reports" && (
+            <div style={{ paddingTop: 44 }}>
+              <h2 className="font-display" style={{ fontSize: 34, fontWeight: 400, letterSpacing: "-0.5px", marginBottom: 6 }}>Reports</h2>
+              <p style={{ color: "var(--muted-2)", fontSize: 13.5, marginBottom: 24 }}>Download and share your financial data</p>
+
+              <div className="panel">
+                {[
+                  { icon: "ti-file-analytics", color: "var(--green)", bg: "var(--green-soft)", name: "Monthly Spending Summary", meta: "Auto-generated · PDF", action: downloadPDF },
+                  { icon: "ti-chart-pie", color: "var(--denim)", bg: "var(--denim-soft)", name: "Category Analysis Report", meta: "Breakdown by category · TXT", action: downloadCategoryReport },
+                  { icon: "ti-alert-triangle", color: "var(--rose)", bg: "var(--rose-soft)", name: "Anomaly & Fraud Alert Report", meta: `${alerts.length} alerts flagged · TXT`, action: downloadAnomalyReport },
+                  { icon: "ti-download", color: "var(--brass)", bg: "var(--brass-soft)", name: "Export Transactions (CSV)", meta: `${rows.length} transactions ready · CSV`, action: downloadCSV },
+                ].map(({ icon, color, bg, name, meta, action }) => (
+                  <div key={name} onClick={action} className="report-row">
+                    <div className="report-icon" style={{ background: bg, color }}>
+                      <i className={`ti ${icon}`} />
+                    </div>
+                    <div className="u-flex-1">
+                      <p style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text)" }}>{name}</p>
+                      <p style={{ fontSize: 11.5, color: "var(--muted-2)", marginTop: 3 }}>{meta}</p>
+                    </div>
+                    <span className={`tag ${rows.length > 0 ? "tag-ok" : "tag-idle"}`}>{rows.length > 0 ? "Ready" : "No data"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ height: 80 }} />
+        </div>
       </div>
-
-      {/* Spinner keyframe */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </main>
   );
 }

@@ -555,7 +555,7 @@ export default function Home() {
           </h1>
 
           <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "var(--muted)", maxWidth: 720, marginBottom: 36 }}>
-            Import raw statement CSV exports from HDFC, ICICI, SBI, Axis, or any global bank. Our engine automatically maps columns, reconciles debits/credits, categorizes your expenses, flags high-value alerts ($500+), and lets you query your cash flow in plain English using Gemini AI. Export audit-ready PDF, TXT, and clean CSV summaries instantly.
+            Import raw statement CSV exports from HDFC, ICICI, SBI, Axis, or any global bank. Our engine automatically maps columns, reconciles debits/credits, categorizes your expenses, flags high-value alerts ($500+), and lets you query your cash flow in plain English using our AI engine. Export audit-ready PDF, TXT, and clean CSV summaries instantly.
           </p>
 
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
@@ -616,7 +616,7 @@ export default function Home() {
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 10 }}>Ledger Chat AI</h3>
               <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
-                Query your spending habits in plain conversational text. Powered by the Gemini 2.5 Flash model.
+                Query your spending habits in plain conversational text. Powered by our advanced AI model.
               </p>
             </div>
 
@@ -760,7 +760,7 @@ export default function Home() {
 
         {/* FOOTER */}
         <footer style={{ textAlign: "center", fontSize: 12, color: "var(--muted-2)", borderTop: "1px solid var(--line-soft)", paddingTop: 20 }}>
-          © {new Date().getFullYear()} Finance AI. Powered by Google Gemini. All rights reserved.
+          © {new Date().getFullYear()} Finance AI. All rights reserved.
         </footer>
       </div>
     );

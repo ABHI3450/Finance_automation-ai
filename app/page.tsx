@@ -554,8 +554,8 @@ export default function Home() {
             Your finances, read like <em style={{ fontStyle: "italic", color: "var(--green)" }}>a ledger</em>, understood like <em style={{ fontStyle: "italic", color: "var(--brass)" }}>an analyst</em>.
           </h1>
 
-          <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--muted)", maxWidth: 640, marginBottom: 36 }}>
-            Upload raw CSV statement files and let our AI engine automatically parse, reconcile, and audit category trends and anomalous transactions.
+          <p style={{ fontSize: 16.5, lineHeight: 1.6, color: "var(--muted)", maxWidth: 720, marginBottom: 36 }}>
+            Import raw statement CSV exports from HDFC, ICICI, SBI, Axis, or any global bank. Our engine automatically maps columns, reconciles debits/credits, categorizes your expenses, flags high-value alerts ($500+), and lets you query your cash flow in plain English using Gemini AI. Export audit-ready PDF, TXT, and clean CSV summaries instantly.
           </p>
 
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>

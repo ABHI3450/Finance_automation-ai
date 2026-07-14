@@ -657,8 +657,8 @@ export default function Home() {
                 { count: "100%", label: "Local Browser Encryption" }
               ].map(({ count, label }) => (
                 <div key={label}>
-                  <p style={{ fontSize: 32, fontWeight: 300, color: "var(--green)" }}>{count}</p>
-                  <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginTop: 4, letterSpacing: 0.5 }}>{label}</p>
+                  <p style={{ fontSize: 32, fontWeight: 300, color: "var(--green)", fontFamily: "'Times New Roman', Times, Georgia, serif" }}>{count}</p>
+                  <p style={{ fontSize: 11, fontFamily: "'Times New Roman', Times, Georgia, serif", textTransform: "uppercase", color: "var(--muted-2)", marginTop: 4, letterSpacing: 0.5 }}>{label}</p>
                 </div>
               ))}
             </div>

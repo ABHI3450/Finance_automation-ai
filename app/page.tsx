@@ -16,6 +16,7 @@ const NAV_ITEMS: { label: string; icon: string }[] = [
   { label: "Analytics", icon: "ti-chart-donut-3" },
   { label: "Reports", icon: "ti-file-analytics" },
   { label: "Pricing", icon: "ti-credit-card" },
+  { label: "Support", icon: "ti-help-circle" },
 ];
 
 const FILTER_ITEMS = ["All", "Alerts", "Large"];
@@ -70,6 +71,16 @@ export default function Home() {
   const [salutation, setSalutation] = useState("Hello");
   const [currentPlan, setCurrentPlan] = useState("Free");
   const [enteredDashboard, setEnteredDashboard] = useState(false);
+  const [supportSubject, setSupportSubject] = useState("");
+  const [supportBody, setSupportBody] = useState("");
+
+  const handleSupportSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = "abhishekchandra.secj1@gmail.com";
+    const subject = encodeURIComponent(`[Finance AI Support] ${supportSubject}`);
+    const body = encodeURIComponent(`Hello Abhishek,\n\nI am encountering the following issue in the Finance AI app:\n\n${supportBody}\n\nSent from Finance Automation Panel.`);
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+  };
 
   // Keep track of live time and calculate matching salutation
   useEffect(() => {
@@ -1585,6 +1596,116 @@ export default function Home() {
                   >
                     {currentPlan === "Business" ? "✓ Active Plan" : "Upgrade to Business"}
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════ SUPPORT ══════════════════ */}
+          {activeNav === "Support" && (
+            <div style={{ paddingTop: 44 }}>
+              <div style={{ marginBottom: 32 }}>
+                <span className="glass-badge" style={{ marginBottom: 12 }}>
+                  <span className="dot" style={{ background: "var(--rose)", boxShadow: "0 0 8px var(--rose)" }} />
+                  Help & Support
+                </span>
+                <h2 className="font-display" style={{ fontSize: 34, fontWeight: 400, letterSpacing: "-0.5px", marginTop: 8 }}>
+                  Support Center
+                </h2>
+                <p style={{ color: "var(--muted-2)", fontSize: 13.5 }}>
+                  Need assistance? Describe your issue below to email our support team directly.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", gap: 32, flexWrap: "wrap", alignItems: "stretch" }}>
+                {/* Support Form */}
+                <div className="panel" style={{ flex: "2 1 400px", padding: 32 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 20 }}>Submit a Support Request</h3>
+                  
+                  <form onSubmit={handleSupportSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 8 }}>
+                        Subject / Problem Type
+                      </label>
+                      <input 
+                        required 
+                        type="text" 
+                        placeholder="e.g., CSV upload formatting error, RAG query limits" 
+                        value={supportSubject}
+                        onChange={(e) => setSupportSubject(e.target.value)}
+                        style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", background: "rgba(10,13,18,0.4)", borderRadius: 6, color: "var(--text)", fontSize: 13 }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 8 }}>
+                        Describe your Problem
+                      </label>
+                      <textarea 
+                        required 
+                        rows={6} 
+                        placeholder="Please describe the issue in detail. If applicable, copy-paste any error messages." 
+                        value={supportBody}
+                        onChange={(e) => setSupportBody(e.target.value)}
+                        style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", background: "rgba(10,13,18,0.4)", borderRadius: 6, color: "var(--text)", fontSize: 13, resize: "none" }}
+                      />
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      className="btn" 
+                      style={{ 
+                        background: "var(--green)", 
+                        color: "var(--ink-950)", 
+                        border: "none", 
+                        padding: "12px 24px", 
+                        borderRadius: 6, 
+                        fontSize: 13.5, 
+                        fontWeight: 600, 
+                        cursor: "pointer", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center",
+                        gap: 8,
+                        marginTop: 10
+                      }}
+                    >
+                      <i className="ti ti-mail-forward" /> Send Support Email
+                    </button>
+                  </form>
+                </div>
+
+                {/* Support details info card */}
+                <div className="panel" style={{ flex: "1 1 300px", padding: 32, display: "flex", flexDirection: "column", gap: 24, justifyContent: "space-between", background: "rgba(236,233,225,0.01)" }}>
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 16 }}>Contact Info</h3>
+                    
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                      <div>
+                        <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 4 }}>Support Mailbox</p>
+                        <p style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text)" }}>abhishekchandra.secj1@gmail.com</p>
+                      </div>
+
+                      <div>
+                        <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 4 }}>Response Time</p>
+                        <p style={{ fontSize: 13.5, color: "var(--muted)" }}>Usually within 24 hours</p>
+                      </div>
+
+                      <div>
+                        <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 4 }}>Coverage</p>
+                        <p style={{ fontSize: 13.5, color: "var(--muted)" }}>Monday - Friday · 9am to 6pm</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 20 }}>
+                    <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 8 }}>Troubleshooting Tips</p>
+                    <ul style={{ paddingLeft: 16, margin: 0, fontSize: 12, color: "var(--muted)", display: "flex", flexDirection: "column", gap: 8 }}>
+                      <li>Ensure your CSV columns contain 'date', 'merchant', and 'amount'.</li>
+                      <li>Verify your Supabase table is created and extension is active.</li>
+                      <li>Double check your API keys are saved in Vercel settings.</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>

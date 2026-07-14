@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     }
 
     let finalContext = context;
+    let matchedRows: any[] | null = null;
     const isSupabaseConfigured = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (isSupabaseConfigured) {
@@ -38,13 +39,14 @@ export async function POST(request: Request) {
 
         // 2. Query Supabase vector database using similarity RPC function
         console.log("Querying Supabase pgvector database for similar transactions...");
-        const { data: matchedRows, error: searchError } = await supabase.rpc('match_transactions', {
+        const { data, error: searchError } = await supabase.rpc('match_transactions', {
           query_embedding: queryEmbedding,
           match_threshold: 0.1, // Retrieve loose matches so LLM has broad context
           match_count: 15
         });
 
         if (searchError) throw searchError;
+        matchedRows = data;
 
         if (matchedRows && matchedRows.length > 0) {
           console.log(`RAG Match Success: Retrieved ${matchedRows.length} relevant transactions from Supabase.`);

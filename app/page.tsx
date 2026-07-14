@@ -652,9 +652,9 @@ export default function Home() {
             </div>
             <div style={{ flex: "1 1 300px", display: "flex", flexDirection: "column", gap: 20, background: "rgba(236,233,225,0.02)", padding: 32, borderRadius: 12, border: "1px solid var(--line-soft)" }}>
               {[
-                { count: "$4.8M+", label: "Transactions Audited" },
-                { count: "99.98%", label: "Parse Accuracy Rate" },
-                { count: "12,000+", label: "Global Beta Users" }
+                { count: rows.length > 0 ? `$${formatAmount(total)}` : "$0", label: "Active Volume Reconciled" },
+                { count: `${rows.length}`, label: "Transactions Audited" },
+                { count: "100%", label: "Local Browser Encryption" }
               ].map(({ count, label }) => (
                 <div key={label}>
                   <p style={{ fontSize: 32, fontWeight: 300, color: "var(--green)" }}>{count}</p>

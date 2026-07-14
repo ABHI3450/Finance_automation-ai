@@ -15,6 +15,7 @@ const NAV_ITEMS: { label: string; icon: string }[] = [
   { label: "Transactions", icon: "ti-receipt" },
   { label: "Analytics", icon: "ti-chart-donut-3" },
   { label: "Reports", icon: "ti-file-analytics" },
+  { label: "Pricing", icon: "ti-credit-card" },
 ];
 
 const FILTER_ITEMS = ["All", "Alerts", "Large"];
@@ -66,6 +67,7 @@ export default function Home() {
 
   const [currentTime, setCurrentTime] = useState("");
   const [salutation, setSalutation] = useState("Hello");
+  const [currentPlan, setCurrentPlan] = useState("Free");
 
   // Keep track of live time and calculate matching salutation
   useEffect(() => {
@@ -137,9 +139,11 @@ export default function Home() {
     }
     const savedName = localStorage.getItem("finance_ai_profile_name");
     const savedEmail = localStorage.getItem("finance_ai_profile_email");
+    const savedPlan = localStorage.getItem("finance_ai_plan");
     if (savedName) setProfileName(savedName);
     if (savedEmail) setProfileEmail(savedEmail);
     if (savedName || savedEmail) setProfileSaved(true);
+    if (savedPlan) setCurrentPlan(savedPlan);
 
     const handler = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
@@ -1084,6 +1088,205 @@ export default function Home() {
                     <span className={`tag ${rows.length > 0 ? "tag-ok" : "tag-idle"}`}>{rows.length > 0 ? "Ready" : "No data"}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════ PRICING ══════════════════ */}
+          {activeNav === "Pricing" && (
+            <div style={{ paddingTop: 44 }}>
+              <div style={{ textAlign: "center", marginBottom: 44 }}>
+                <span className="glass-badge" style={{ marginBottom: 16 }}>
+                  <span className="dot" style={{ background: "var(--brass)", boxShadow: "0 0 8px var(--brass)" }} />
+                  Billing & Licensing
+                </span>
+                <h2 className="font-display" style={{ fontSize: 40, fontWeight: 400, letterSpacing: "-1px", marginTop: 12, marginBottom: 12 }}>
+                  Find the plan that matches your pace
+                </h2>
+                <p style={{ color: "var(--muted)", fontSize: 15, maxWidth: 540, margin: "0 auto" }}>
+                  Unlock unlimited statement reconciliation, advanced anomaly detection, and integrations to automate your ledger.
+                </p>
+              </div>
+
+              <div className="grid-3-resp" style={{ alignItems: "stretch", gap: 24 }}>
+                {/* TIER 1: FREE */}
+                <div className={`panel u-col`} style={{ 
+                  position: "relative", 
+                  border: currentPlan === "Free" ? "1px solid var(--green)" : "1px solid var(--line)",
+                  background: currentPlan === "Free" ? "rgba(43, 178, 127, 0.02)" : "rgba(236, 233, 225, 0.01)",
+                  padding: 32,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between"
+                }}>
+                  {currentPlan === "Free" && (
+                    <span className="glass-badge" style={{ position: "absolute", top: 18, right: 18, fontSize: 10, padding: "3px 8px" }}>
+                      <span className="dot" /> Active Plan
+                    </span>
+                  )}
+                  <div>
+                    <p style={{ fontSize: 12, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: 1, color: "var(--muted)" }}>Free</p>
+                    <p className="font-display" style={{ fontSize: 20, marginTop: 8, color: "var(--text)" }}>Individual</p>
+                    
+                    <div style={{ margin: "24px 0", display: "flex", alignItems: "baseline", gap: 4 }}>
+                      <span style={{ fontSize: 36, fontWeight: 300, color: "var(--text)" }}>$0</span>
+                      <span style={{ fontSize: 13, color: "var(--muted-2)" }}>/ month</span>
+                    </div>
+
+                    <div style={{ height: 1, background: "var(--line-soft)", margin: "16px 0" }} />
+
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                      {[
+                        "Up to 2 bank statements / mo",
+                        "10 AI queries / mo",
+                        "Basic CSV export reports",
+                        "Standard upload templates",
+                        "Local-only browser storage",
+                        "No direct accounting integrations"
+                      ].map((feat, i) => (
+                        <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: i < 3 ? "var(--text)" : "var(--muted)" }}>
+                          <i className="ti ti-check" style={{ color: i < 3 ? "var(--green)" : "var(--muted-2)", marginTop: 2 }} />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button 
+                    disabled={currentPlan === "Free"}
+                    onClick={() => {
+                      setCurrentPlan("Free");
+                      localStorage.setItem("finance_ai_plan", "Free");
+                    }}
+                    className={`btn ${currentPlan === "Free" ? "btn-sec" : "btn-primary"}`}
+                    style={{ marginTop: 32, width: "100%", cursor: currentPlan === "Free" ? "default" : "pointer" }}
+                  >
+                    {currentPlan === "Free" ? "Current Plan" : "Downgrade to Free"}
+                  </button>
+                </div>
+
+                {/* TIER 2: PRO */}
+                <div className={`panel u-col`} style={{ 
+                  position: "relative", 
+                  border: currentPlan === "Pro" ? "1px solid var(--green)" : "1px solid var(--brass-line)",
+                  background: currentPlan === "Pro" ? "rgba(43, 178, 127, 0.02)" : "rgba(205, 164, 58, 0.02)",
+                  padding: 32,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  boxShadow: "0 10px 40px rgba(0,0,0,0.15)"
+                }}>
+                  <span className="glass-badge" style={{ position: "absolute", top: 18, right: 18, fontSize: 10, padding: "3px 8px", borderColor: "var(--brass-line)", color: "var(--brass)" }}>
+                    <span className="dot" style={{ background: "var(--brass)", boxShadow: "0 0 8px var(--brass)" }} /> Recommended
+                  </span>
+                  <div>
+                    <p style={{ fontSize: 12, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: 1, color: "var(--brass)" }}>Pro</p>
+                    <p className="font-display" style={{ fontSize: 20, marginTop: 8, color: "var(--text)" }}>Freelancer / Power User</p>
+                    
+                    <div style={{ margin: "24px 0", display: "flex", alignItems: "baseline", gap: 4 }}>
+                      <span style={{ fontSize: 36, fontWeight: 300, color: "var(--text)" }}>$59</span>
+                      <span style={{ fontSize: 13, color: "var(--muted-2)" }}>/ month</span>
+                    </div>
+
+                    <div style={{ height: 1, background: "var(--line-soft)", margin: "16px 0" }} />
+
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                      {[
+                        "Unlimited statement uploads",
+                        "Unlimited AI assistant queries",
+                        "Full PDF & Category Analysis reports",
+                        "Standard + custom formats",
+                        "Secure cloud backup",
+                        "No accounting integrations"
+                      ].map((feat, i) => (
+                        <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: i < 5 ? "var(--text)" : "var(--muted)" }}>
+                          <i className="ti ti-check" style={{ color: i < 5 ? "var(--green)" : "var(--muted-2)", marginTop: 2 }} />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      setCurrentPlan("Pro");
+                      localStorage.setItem("finance_ai_plan", "Pro");
+                      alert("Successfully upgraded to Pro Plan ($59/mo)!");
+                    }}
+                    className="btn" 
+                    style={{ 
+                      marginTop: 32, 
+                      width: "100%", 
+                      background: currentPlan === "Pro" ? "transparent" : "var(--brass)",
+                      border: currentPlan === "Pro" ? "1px solid var(--green)" : "none",
+                      color: currentPlan === "Pro" ? "var(--green)" : "var(--ink-950)"
+                    }}
+                  >
+                    {currentPlan === "Pro" ? "✓ Active Plan" : "Upgrade to Pro"}
+                  </button>
+                </div>
+
+                {/* TIER 3: BUSINESS */}
+                <div className={`panel u-col`} style={{ 
+                  position: "relative", 
+                  border: currentPlan === "Business" ? "1px solid var(--green)" : "1px solid var(--line)",
+                  background: currentPlan === "Business" ? "rgba(43, 178, 127, 0.02)" : "rgba(236, 233, 225, 0.01)",
+                  padding: 32,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between"
+                }}>
+                  {currentPlan === "Business" && (
+                    <span className="glass-badge" style={{ position: "absolute", top: 18, right: 18, fontSize: 10, padding: "3px 8px" }}>
+                      <span className="dot" /> Active Plan
+                    </span>
+                  )}
+                  <div>
+                    <p style={{ fontSize: 12, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: 1, color: "var(--muted)" }}>Enterprise</p>
+                    <p className="font-display" style={{ fontSize: 20, marginTop: 8, color: "var(--text)" }}>Small Business / Corp</p>
+                    
+                    <div style={{ margin: "24px 0", display: "flex", alignItems: "baseline", gap: 4 }}>
+                      <span style={{ fontSize: 36, fontWeight: 300, color: "var(--text)" }}>$99</span>
+                      <span style={{ fontSize: 13, color: "var(--muted-2)" }}>/ month</span>
+                    </div>
+
+                    <div style={{ height: 1, background: "var(--line-soft)", margin: "16px 0" }} />
+
+                    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                      {[
+                        "Unlimited statement uploads",
+                        "Unlimited queries (Priority queue)",
+                        "Premium Anomaly & Fraud reports",
+                        "Custom statement parsers",
+                        "Team shared workspace & history",
+                        "Stripe, QuickBooks & Xero integrations"
+                      ].map((feat, i) => (
+                        <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, color: "var(--text)" }}>
+                          <i className="ti ti-check" style={{ color: "var(--green)", marginTop: 2 }} />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      setCurrentPlan("Business");
+                      localStorage.setItem("finance_ai_plan", "Business");
+                      alert("Successfully upgraded to Business Plan ($99/mo)!");
+                    }}
+                    className="btn btn-primary"
+                    style={{ 
+                      marginTop: 32, 
+                      width: "100%",
+                      background: currentPlan === "Business" ? "transparent" : "var(--green)",
+                      border: currentPlan === "Business" ? "1px solid var(--green)" : "none",
+                      color: currentPlan === "Business" ? "var(--green)" : "var(--ink-950)"
+                    }}
+                  >
+                    {currentPlan === "Business" ? "✓ Active Plan" : "Upgrade to Business"}
+                  </button>
+                </div>
               </div>
             </div>
           )}

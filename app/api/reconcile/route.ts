@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { chromaClient } from '@/lib/chroma';
 
 export async function POST(request: Request) {
   try {
@@ -10,22 +11,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Gemini API key is missing. Check your .env.local file." }, { status: 500 });
     }
 
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      // Graceful fallback warning if database isn't linked yet
+    const isChromaConfigured = !!process.env.CHROMA_URL && !!chromaClient;
+    const isSupabaseConfigured = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!isChromaConfigured && !isSupabaseConfigured) {
       return NextResponse.json({ 
-        message: "Supabase credentials missing. Transactions parsed locally. Link your Supabase database in .env.local to index vectors.",
+        message: "No vector database credentials configured (Supabase/Chroma). Reconciled statement locally.",
         success: true,
         fallback: true
       });
-    }
-
-    // Clear existing transaction embeddings
-    const { error: deleteError } = await supabase
-      .from('transactions')
-      .delete()
-      .filter('id', 'neq', '00000000-0000-0000-0000-000000000000'); // Delete all
-    if (deleteError) {
-      console.warn("Delete old records failed, continuing:", deleteError.message);
     }
 
     // Process transactions and fetch vector embeddings from Gemini API
@@ -72,15 +66,54 @@ export async function POST(request: Request) {
     });
 
     const rowsToInsert = await Promise.all(promises);
-
-    // Insert only items that have successfully generated embeddings
     const validRows = rowsToInsert.filter((r) => r.embedding !== null);
+
     if (validRows.length > 0) {
-      const { error: insertError } = await supabase.from('transactions').insert(validRows);
-      if (insertError) throw insertError;
+      if (isChromaConfigured) {
+        console.log("RAG Ingestion: Upserting to ChromaDB collection 'bank_statements'...");
+        // 1. Get or create the Chroma collection
+        const collection = await chromaClient.getOrCreateCollection({
+          name: "bank_statements"
+        });
+
+        // 2. Clear old data from collection
+        try {
+          await collection.delete();
+        } catch (delErr) {
+          // Ignore if empty
+        }
+
+        // 3. Upsert vectors
+        await collection.add({
+          ids: validRows.map((_, idx) => `txn_${Date.now()}_${idx}`),
+          embeddings: validRows.map((r) => r.embedding),
+          metadatas: validRows.map((r) => ({
+            date: r.date,
+            merchant: r.merchant,
+            amount: r.amount,
+            category: r.category
+          })),
+          documents: validRows.map((r) => `Date: ${r.date}, Merchant: ${r.merchant}, Amount: $${r.amount}, Category: ${r.category}`)
+        });
+        console.log(`ChromaDB Ingestion Success: Indexed ${validRows.length} transactions.`);
+      } else if (isSupabaseConfigured) {
+        console.log("RAG Ingestion: Inserting to Supabase pgvector...");
+        // Clear existing transactions in database before importing new statement
+        const { error: deleteError } = await supabase
+          .from('transactions')
+          .delete()
+          .filter('id', 'neq', '00000000-0000-0000-0000-000000000000');
+        if (deleteError) {
+          console.warn("Delete old Supabase records failed:", deleteError.message);
+        }
+
+        const { error: insertError } = await supabase.from('transactions').insert(validRows);
+        if (insertError) throw insertError;
+        console.log(`Supabase Ingestion Success: Indexed ${validRows.length} transactions.`);
+      }
     }
 
-    return NextResponse.json({ success: true, count: validRows.length });
+    return NextResponse.json({ success: true, count: validRows.length, target: isChromaConfigured ? "chromadb" : "supabase" });
   } catch (error) {
     console.error("Reconcile API Error:", error);
     const msg = error instanceof Error ? error.message : "Failed to reconcile statement vectors";

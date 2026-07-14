@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { chromaClient } from '@/lib/chroma';
 
 export async function POST(request: Request) {
   try {
@@ -12,9 +13,11 @@ export async function POST(request: Request) {
 
     let finalContext = context;
     let matchedRows: any[] | null = null;
-    const isSupabaseConfigured = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    const isChromaConfigured = !!process.env.CHROMA_URL && !!chromaClient;
+    const isSupabaseConfigured = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (isSupabaseConfigured) {
+    if (isChromaConfigured || isSupabaseConfigured) {
       try {
         console.log("RAG Pipeline Active: Generating query vector...");
         // 1. Generate embedding for user query
@@ -37,20 +40,50 @@ export async function POST(request: Request) {
         const embedData = await embedRes.json();
         const queryEmbedding = embedData?.embedding?.values ?? [];
 
-        // 2. Query Supabase vector database using similarity RPC function
-        console.log("Querying Supabase pgvector database for similar transactions...");
-        const { data, error: searchError } = await supabase.rpc('match_transactions', {
-          query_embedding: queryEmbedding,
-          match_threshold: 0.1, // Retrieve loose matches so LLM has broad context
-          match_count: 15
-        });
+        // 2. Query either ChromaDB or Supabase depending on what is configured
+        if (isChromaConfigured) {
+          console.log("Querying ChromaDB vector database for similar transactions...");
+          const collection = await chromaClient.getCollection({
+            name: "bank_statements"
+          });
 
-        if (searchError) throw searchError;
-        matchedRows = data;
+          const queryResponse = await collection.query({
+            queryEmbeddings: [queryEmbedding],
+            nResults: 15
+          });
+
+          const metadatas = queryResponse.metadatas[0] || [];
+          const distances = queryResponse.distances?.[0] || [];
+
+          matchedRows = metadatas.map((m: any, idx: number) => {
+            const dist = distances[idx] ?? 0.1;
+            // Cosine distance is usually 0 to 2. Similarity = 1 - distance
+            const similarity = Math.max(0, Math.min(1, 1 - dist));
+            return {
+              date: m.date,
+              merchant: m.merchant,
+              amount: m.amount,
+              category: m.category,
+              similarity
+            };
+          });
+
+          console.log(`ChromaDB RAG Success: Retrieved ${matchedRows.length} relevant transactions.`);
+        } else if (isSupabaseConfigured) {
+          console.log("Querying Supabase pgvector database for similar transactions...");
+          const { data, error: searchError } = await supabase.rpc('match_transactions', {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.1,
+            match_count: 15
+          });
+
+          if (searchError) throw searchError;
+          matchedRows = data;
+          console.log(`Supabase RAG Success: Retrieved ${matchedRows?.length || 0} relevant transactions.`);
+        }
 
         if (matchedRows && matchedRows.length > 0) {
-          console.log(`RAG Match Success: Retrieved ${matchedRows.length} relevant transactions from Supabase.`);
-          finalContext = `Here are the retrieved relevant transactions matching the user query from the database:\n` +
+          finalContext = `Here are the retrieved relevant transactions matching the user query from the vector database:\n` +
             matchedRows
               .map((r: any) => `Date: ${r.date}, Merchant: ${r.merchant}, Amount: $${r.amount}, Category: ${r.category}`)
               .join("\n") +
@@ -59,10 +92,10 @@ export async function POST(request: Request) {
           console.log("RAG Match: No similar transactions found in database. Using default fallback context.");
         }
       } catch (dbErr) {
-        console.error("Supabase RAG Vector Search failed, falling back to local context:", dbErr);
+        console.error("Vector database search failed, falling back to local context:", dbErr);
       }
     } else {
-      console.log("RAG Fallback Mode: Supabase keys not set. Processing query via client-provided context.");
+      console.log("RAG Fallback Mode: No database keys set. Processing query via client-provided context.");
     }
 
     // 3. Request Gemini completion with retrieved context
@@ -96,7 +129,10 @@ export async function POST(request: Request) {
     // Extracting the text response from Gemini's payload structure
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response received.";
 
-    return NextResponse.json({ text, matchedSources: isSupabaseConfigured ? (matchedRows || []) : null });
+    return NextResponse.json({ 
+      text, 
+      matchedSources: (isChromaConfigured || isSupabaseConfigured) ? (matchedRows || []) : null 
+    });
   } catch (error) {
     console.error("AI Route Error:", error);
     const message = error instanceof Error ? error.message : "Failed to connect to AI";

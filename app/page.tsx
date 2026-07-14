@@ -740,19 +740,19 @@ export default function Home() {
           <form onSubmit={(e) => { e.preventDefault(); alert("Thanks! Message received."); }} className="panel" style={{ display: "flex", flexDirection: "column", gap: 16, padding: 32, background: "rgba(236, 233, 225, 0.01)" }}>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: 200 }}>
-                <label style={{ display: "block", fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 8 }}>Name</label>
-                <input required type="text" placeholder="John Doe" style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", background: "rgba(10,13,18,0.4)", borderRadius: 6, color: "var(--text)", fontSize: 13 }} />
+                <label style={{ display: "block", fontSize: 11, fontFamily: "'Times New Roman', Times, Georgia, serif", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 8 }}>Name</label>
+                <input required type="text" placeholder="John Doe" style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", background: "rgba(10,13,18,0.4)", borderRadius: 6, color: "var(--text)", fontSize: 13, fontFamily: "'Times New Roman', Times, Georgia, serif" }} />
               </div>
               <div style={{ flex: 1, minWidth: 200 }}>
-                <label style={{ display: "block", fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 8 }}>Email</label>
-                <input required type="email" placeholder="john@example.com" style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", background: "rgba(10,13,18,0.4)", borderRadius: 6, color: "var(--text)", fontSize: 13 }} />
+                <label style={{ display: "block", fontSize: 11, fontFamily: "'Times New Roman', Times, Georgia, serif", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 8 }}>Email</label>
+                <input required type="email" placeholder="john@example.com" style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", background: "rgba(10,13,18,0.4)", borderRadius: 6, color: "var(--text)", fontSize: 13, fontFamily: "'Times New Roman', Times, Georgia, serif" }} />
               </div>
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 8 }}>Message</label>
-              <textarea required rows={4} placeholder="How can we help you?" style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", background: "rgba(10,13,18,0.4)", borderRadius: 6, color: "var(--text)", fontSize: 13, resize: "none" }} />
+              <label style={{ display: "block", fontSize: 11, fontFamily: "'Times New Roman', Times, Georgia, serif", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 8 }}>Message</label>
+              <textarea required rows={4} placeholder="How can we help you?" style={{ width: "100%", padding: "10px 14px", border: "1px solid var(--line)", background: "rgba(10,13,18,0.4)", borderRadius: 6, color: "var(--text)", fontSize: 13, resize: "none", fontFamily: "'Times New Roman', Times, Georgia, serif" }} />
             </div>
-            <button type="submit" className="btn" style={{ background: "var(--green)", color: "var(--ink-950)", border: "none", padding: "12px", borderRadius: 6, fontSize: 13.5, fontWeight: 600, cursor: "pointer", marginTop: 8 }}>
+            <button type="submit" className="btn" style={{ background: "var(--green)", color: "var(--ink-950)", border: "none", padding: "12px", borderRadius: 6, fontSize: 13.5, fontWeight: 600, cursor: "pointer", marginTop: 8, fontFamily: "'Times New Roman', Times, Georgia, serif" }}>
               Send Message
             </button>
           </form>

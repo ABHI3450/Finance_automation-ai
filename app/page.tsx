@@ -58,6 +58,7 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiSources, setAiSources] = useState<any[]>([]);
   const [customQuery, setCustomQuery] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
@@ -482,6 +483,7 @@ export default function Home() {
   const runAI = async (prompt: string) => {
     setAiPrompt(prompt);
     setAiResult("");
+    setAiSources([]);
     setAiLoading(true);
 
     const context =
@@ -501,6 +503,7 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "AI request failed");
       setAiResult(data.text ?? "No response received.");
+      setAiSources(data.matchedSources ?? []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unable to connect to AI.";
       setAiResult(msg);
@@ -1204,6 +1207,25 @@ export default function Home() {
                               ✦ {aiPrompt}
                             </p>
                             <p style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{aiResult}</p>
+                            {aiSources && aiSources.length > 0 && (
+                              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed var(--line)" }}>
+                                <p style={{ fontSize: 10, color: "var(--green)", fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                                  <i className="ti ti-database" style={{ fontSize: 12 }} /> RAG Database Matches (pgvector)
+                                </p>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                  {aiSources.map((src, i) => (
+                                    <div key={i} style={{ fontSize: 10.5, background: "rgba(236,233,225,0.02)", padding: "5px 8px", borderRadius: 4, display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid var(--line-soft)" }}>
+                                      <span style={{ color: "var(--text)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: 130 }}>
+                                        {src.merchant}
+                                      </span>
+                                      <span style={{ color: "var(--muted-2)", fontFamily: "var(--font-mono)" }}>
+                                        ${src.amount} · {Math.round((src.similarity || 0) * 100)}%
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </>
                         )}
                       </div>

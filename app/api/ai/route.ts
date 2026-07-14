@@ -29,7 +29,8 @@ export async function POST(request: Request) {
         );
 
         if (!embedRes.ok) {
-          throw new Error("Failed to embed user query.");
+          const errData = await embedRes.json();
+          throw new Error("Failed to embed user query: " + (errData?.error?.message || embedRes.statusText));
         }
 
         const embedData = await embedRes.json();
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
     // Extracting the text response from Gemini's payload structure
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response received.";
 
-    return NextResponse.json({ text });
+    return NextResponse.json({ text, matchedSources: isSupabaseConfigured ? (matchedRows || []) : null });
   } catch (error) {
     console.error("AI Route Error:", error);
     const message = error instanceof Error ? error.message : "Failed to connect to AI";

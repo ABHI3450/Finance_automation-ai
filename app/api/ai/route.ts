@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         console.log("RAG Pipeline Active: Generating query vector...");
         // 1. Generate embedding for user query
         const embedRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

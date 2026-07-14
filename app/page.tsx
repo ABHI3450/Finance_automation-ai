@@ -691,6 +691,80 @@ export default function Home() {
           </div>
         </section>
 
+        {/* BUSINESS SCALING & GROWTH IMPACT */}
+        <section style={{ maxWidth: 1000, margin: "60px auto", borderTop: "1px solid var(--line-soft)", paddingTop: 60 }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <span className="glass-badge" style={{ marginBottom: 12 }}>
+              Value Proposition
+            </span>
+            <h2 className="font-display" style={{ fontSize: 36, fontWeight: 400, letterSpacing: "-0.5px", marginTop: 8 }}>
+              Engineered for scale, built for clarity
+            </h2>
+            <p style={{ color: "var(--muted)", fontSize: 14.5, marginTop: 8, maxWidth: 600, margin: "8px auto 0" }}>
+              How our ledger automation platform transforms bookkeeping workflows for operations of all sizes.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: 32, flexWrap: "wrap", marginBottom: 40 }}>
+            {/* Big Business */}
+            <div className="panel" style={{ flex: "1 1 300px", padding: 32, background: "rgba(236,233,225,0.01)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 6, background: "var(--denim-soft)", color: "var(--denim)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                  <i className="ti ti-building" />
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 500 }}>For Big Businesses</h3>
+              </div>
+              <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, marginBottom: 14 }}>
+                Standardizes fragmented statements across multiple bank accounts and formats into a single, unified database schema.
+              </p>
+              <ul style={{ paddingLeft: 16, fontSize: 12.5, color: "var(--text)", display: "flex", flexDirection: "column", gap: 8, margin: 0 }}>
+                <li>Auto-maps arbitrary column layouts to a common ledger.</li>
+                <li>Generates audit-ready anomaly and fraud reports.</li>
+                <li>Reduces monthly closing cycles from weeks to minutes.</li>
+              </ul>
+            </div>
+
+            {/* Small Business */}
+            <div className="panel" style={{ flex: "1 1 300px", padding: 32, background: "rgba(236,233,225,0.01)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 6, background: "var(--green-soft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                  <i className="ti ti-store" />
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 500 }}>For Small Businesses</h3>
+              </div>
+              <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, marginBottom: 14 }}>
+                Acts as a virtual fractional CFO, giving instant answers on spending metrics and patterns without costly consulting.
+              </p>
+              <ul style={{ paddingLeft: 16, fontSize: 12.5, color: "var(--text)", display: "flex", flexDirection: "column", gap: 8, margin: 0 }}>
+                <li>100% free local client-side sandbox with zero cloud fees.</li>
+                <li>Automatically groups business deductions for tax prep.</li>
+                <li>Alerts on high-risk, multi-charge, or duplicate billings.</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Growth & App Value */}
+          <div className="grid-2-resp" style={{ gap: 32, marginTop: 32 }}>
+            <div className="panel" style={{ padding: 32, background: "rgba(236,233,225,0.01)" }}>
+              <h4 style={{ fontSize: 15, fontWeight: 500, marginBottom: 12, color: "var(--green)", display: "flex", alignItems: "center", gap: 8 }}>
+                <i className="ti ti-trending-up" /> Impact on Company Growth
+              </h4>
+              <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
+                By automating ledger reconciliation, companies cut bookkeeping overhead costs by over 90%. Real-time spend velocity alerts prevent capital wastage, detect billing creep early, and provide founders with clear, visual cash flow insights needed to confidently fund expansion.
+              </p>
+            </div>
+
+            <div className="panel" style={{ padding: 32, background: "rgba(236,233,225,0.01)" }}>
+              <h4 style={{ fontSize: 15, fontWeight: 500, marginBottom: 12, color: "var(--brass)", display: "flex", alignItems: "center", gap: 8 }}>
+                <i className="ti ti-square-rounded-check" /> Why It is a Great Web App
+              </h4>
+              <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
+                Designed with a gorgeous dark glassmorphism layout, it features sub-second column parsing, serverless vector search indexes (RAG) running on Postgres pgvector / ChromaDB, and client sandbox privacy where your sensitive financial CSV details never leave your local browser memory.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* SECURITY & TRUST SECTION */}
         <section style={{ maxWidth: 1000, margin: "60px auto", background: "linear-gradient(135deg, rgba(43, 178, 127, 0.05) 0%, rgba(205, 164, 58, 0.02) 100%)", border: "1px solid var(--green-line)", borderRadius: 16, padding: "40px 48px", textAlign: "center" }}>
           <span className="glass-badge" style={{ marginBottom: 16, borderColor: "var(--green-line)" }}>
@@ -746,6 +820,88 @@ export default function Home() {
                 <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6, paddingLeft: 26 }}>{a}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* FOUNDER PROFILE SECTION */}
+        <section style={{ maxWidth: 800, margin: "60px auto", borderTop: "1px solid var(--line-soft)", paddingTop: 60 }}>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <span className="glass-badge" style={{ marginBottom: 12 }}>
+              The Team
+            </span>
+            <h2 className="font-display" style={{ fontSize: 32, fontWeight: 400, letterSpacing: "-0.5px", marginTop: 8 }}>
+              Meet the Founder
+            </h2>
+          </div>
+
+          <div className="panel" style={{ display: "flex", gap: 32, padding: 32, background: "rgba(236,233,225,0.01)", flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ flex: "1 0 140px", display: "flex", justifyContent: "center" }}>
+              <div style={{ position: "relative", width: 140, height: 140, borderRadius: "50%", padding: 3, background: "linear-gradient(135deg, var(--green) 0%, var(--brass) 100%)", boxShadow: "0 0 20px rgba(16,185,129,0.2)" }}>
+                <img 
+                  src="/founder_avatar.jpg" 
+                  alt="Abhishek Chandra" 
+                  style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", background: "var(--ink-950)" }} 
+                />
+              </div>
+            </div>
+
+            <div style={{ flex: "2 1 400px" }}>
+              <h3 style={{ fontSize: 20, fontWeight: 500, color: "var(--text)" }}>Abhishek Chandra</h3>
+              <p style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--green)", marginTop: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Lead Architect & SDE / AI Fintech Engineer
+              </p>
+              
+              <p style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.6, marginTop: 14, marginBottom: 20 }}>
+                As a software engineer specializing in scalable artificial intelligence and ledger pipelines, Abhishek engineered Finance AI to bridge the gap between messy statement formats and instant ledger insights. The platform was built from the ground up to empower both global enterprises and local freelancers with bank-grade financial analysis.
+              </p>
+
+              <div style={{ display: "flex", gap: 16 }}>
+                <a 
+                  href="https://www.linkedin.com/in/abhishekchandra-sde" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn"
+                  style={{ 
+                    background: "rgba(255,255,255,0.03)", 
+                    border: "1px solid var(--line)", 
+                    color: "var(--text)", 
+                    padding: "8px 16px", 
+                    borderRadius: 6, 
+                    fontSize: 12.5, 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 8,
+                    cursor: "pointer",
+                    textDecoration: "none"
+                  }}
+                >
+                  <i className="ti ti-brand-linkedin" style={{ color: "#0077b5", fontSize: 16 }} />
+                  LinkedIn Profile
+                </a>
+                <a 
+                  href="https://www.github.com/ABHI3450" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn"
+                  style={{ 
+                    background: "rgba(255,255,255,0.03)", 
+                    border: "1px solid var(--line)", 
+                    color: "var(--text)", 
+                    padding: "8px 16px", 
+                    borderRadius: 6, 
+                    fontSize: 12.5, 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 8,
+                    cursor: "pointer",
+                    textDecoration: "none"
+                  }}
+                >
+                  <i className="ti ti-brand-github" style={{ color: "#fafafa", fontSize: 16 }} />
+                  GitHub Code
+                </a>
+              </div>
+            </div>
           </div>
         </section>
 

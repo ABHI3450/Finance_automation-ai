@@ -68,6 +68,7 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState("");
   const [salutation, setSalutation] = useState("Hello");
   const [currentPlan, setCurrentPlan] = useState("Free");
+  const [enteredDashboard, setEnteredDashboard] = useState(false);
 
   // Keep track of live time and calculate matching salutation
   useEffect(() => {
@@ -501,11 +502,149 @@ export default function Home() {
     ? profileName.trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase()
     : null;
 
+  if (!enteredDashboard) {
+    return (
+      <div className="welcome-container" style={{
+        minHeight: "100vh",
+        background: "radial-gradient(circle at top right, rgba(16, 185, 129, 0.05), transparent 600px), radial-gradient(circle at bottom left, rgba(205, 164, 58, 0.03), transparent 600px), var(--ink-950)",
+        color: "var(--text)",
+        fontFamily: "var(--font-body)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "24px 40px",
+        overflowX: "hidden"
+      }}>
+        {/* HEADER */}
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="rail-mark" style={{ width: 36, height: 36, borderRadius: 10 }}>
+              <i className="ti ti-currency-dollar" style={{ fontSize: 20, color: "#fff" }} />
+            </div>
+            <div>
+              <span style={{ fontSize: 17, fontWeight: 500, fontFamily: "var(--font-display)", letterSpacing: "-0.3px" }}>Finance AI</span>
+              <small style={{ display: "block", fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--muted)", textTransform: "uppercase", letterSpacing: 1 }}>Ledger Intelligence</small>
+            </div>
+          </div>
+          <button 
+            onClick={() => setEnteredDashboard(true)}
+            className="btn" 
+            style={{ 
+              background: "rgba(255,255,255,0.06)", 
+              border: "1px solid rgba(255,255,255,0.1)", 
+              color: "var(--text)",
+              padding: "8px 18px",
+              borderRadius: 8,
+              fontSize: 13,
+              cursor: "pointer"
+            }}
+          >
+            Launch Dashboard
+          </button>
+        </header>
+
+        {/* HERO SECTION */}
+        <main style={{ maxWidth: 800, margin: "80px auto 40px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <span className="glass-badge" style={{ marginBottom: 24, fontSize: 11, padding: "5px 12px" }}>
+            <span className="dot" style={{ background: "var(--green)", boxShadow: "0 0 8px var(--green)" }} />
+            Introducing Ledger Intelligence 2.0
+          </span>
+          
+          <h1 className="font-display" style={{ fontSize: 62, lineHeight: 1.05, fontWeight: 400, letterSpacing: "-2px", color: "var(--text)", marginBottom: 20 }}>
+            Your finances, read like <em style={{ fontStyle: "italic", color: "var(--green)" }}>a ledger</em>, understood like <em style={{ fontStyle: "italic", color: "var(--brass)" }}>an analyst</em>.
+          </h1>
+
+          <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--muted)", maxWidth: 640, marginBottom: 36 }}>
+            Upload raw CSV statement files and let our AI engine automatically parse, reconcile, and audit category trends and anomalous transactions.
+          </p>
+
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
+            <button 
+              onClick={() => setEnteredDashboard(true)}
+              className="btn" 
+              style={{ 
+                background: "var(--green)", 
+                color: "var(--ink-950)", 
+                padding: "14px 28px", 
+                borderRadius: 8, 
+                fontSize: 15, 
+                fontWeight: 600,
+                boxShadow: "0 4px 20px rgba(16, 185, 129, 0.3)",
+                border: "none",
+                cursor: "pointer"
+              }}
+            >
+              Get Started for Free
+            </button>
+            <button 
+              onClick={() => {
+                setEnteredDashboard(true);
+                setActiveNav("Pricing");
+              }}
+              className="btn" 
+              style={{ 
+                background: "transparent", 
+                border: "1px solid var(--line)", 
+                color: "var(--text)", 
+                padding: "14px 28px", 
+                borderRadius: 8, 
+                fontSize: 15,
+                cursor: "pointer"
+              }}
+            >
+              View Pricing Tiers
+            </button>
+          </div>
+        </main>
+
+        {/* FEATURES GRID */}
+        <section style={{ maxWidth: 1000, margin: "40px auto 60px" }}>
+          <div className="grid-3-resp" style={{ gap: 24 }}>
+            <div className="panel" style={{ padding: 24, background: "rgba(236, 233, 225, 0.02)" }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--green-soft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 20 }}>
+                <i className="ti ti-receipt" style={{ margin: "auto" }} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 10 }}>Bank Reconciliation</h3>
+              <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+                Support for all major bank statement formats in CSV. Upload and see everything structured instantly.
+              </p>
+            </div>
+
+            <div className="panel" style={{ padding: 24, background: "rgba(236, 233, 225, 0.02)" }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--brass-soft)", color: "var(--brass)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 20 }}>
+                <i className="ti ti-messages" style={{ margin: "auto" }} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 10 }}>Ledger Chat AI</h3>
+              <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+                Query your spending habits in plain conversational text. Powered by the Gemini 2.5 Flash model.
+              </p>
+            </div>
+
+            <div className="panel" style={{ padding: 24, background: "rgba(236, 233, 225, 0.02)" }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--rose-soft)", color: "var(--rose)", display: "flex", alignItems: "center", justifyCenter: "center", marginBottom: 16, fontSize: 20 }}>
+                <i className="ti ti-alert-triangle" style={{ margin: "auto" }} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 10 }}>Anomaly Auditing</h3>
+              <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+                Automated statistical standard deviation threshold calculations to immediately pinpoint fraud alerts.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <footer style={{ textAlign: "center", fontSize: 12, color: "var(--muted-2)", borderTop: "1px solid var(--line-soft)", paddingTop: 20 }}>
+          © {new Date().getFullYear()} Finance AI. Powered by Google Gemini. All rights reserved.
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <main className="app-shell">
       {/* ══════════════ LEFT RAIL ══════════════ */}
       <aside className="rail">
-        <div className="rail-brand">
+        <div className="rail-brand" onClick={() => setEnteredDashboard(false)} style={{ cursor: "pointer" }}>
           <div className="rail-mark">
             <i className="ti ti-currency-dollar" style={{ fontSize: 18, color: "#fff" }} />
           </div>

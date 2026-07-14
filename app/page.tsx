@@ -155,9 +155,21 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const updateRows = (newRows: Transaction[]) => {
+  const updateRows = async (newRows: Transaction[]) => {
     setRows(newRows);
     localStorage.setItem("finance_ai_rows", JSON.stringify(newRows));
+
+    if (newRows.length > 0) {
+      try {
+        await fetch("/api/reconcile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transactions: newRows })
+        });
+      } catch (err) {
+        console.error("Failed to index transactions in vector database:", err);
+      }
+    }
   };
 
   const loadDemoData = () => {

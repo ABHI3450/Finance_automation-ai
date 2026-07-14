@@ -76,7 +76,7 @@ export default function Home() {
 
   const handleSupportSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const email = "abhishekchandra.secj1@gmail.com";
+    const email = "abhishek69fyp@gmail.com";
     const subject = encodeURIComponent(`[Finance AI Support] ${supportSubject}`);
     const body = encodeURIComponent(`Hello Abhishek,\n\nI am encountering the following issue in the Finance AI app:\n\n${supportBody}\n\nSent from Finance Automation Panel.`);
     window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
@@ -1683,7 +1683,7 @@ export default function Home() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                       <div>
                         <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 4 }}>Support Mailbox</p>
-                        <p style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text)" }}>abhishekchandra.secj1@gmail.com</p>
+                        <p style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text)" }}>abhishek69fyp@gmail.com</p>
                       </div>
 
                       <div>

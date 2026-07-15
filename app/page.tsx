@@ -647,7 +647,7 @@ export default function Home() {
             </div>
 
             <div className="panel" style={{ padding: 24, background: "rgba(236, 233, 225, 0.02)" }}>
-              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--rose-soft)", color: "var(--rose)", display: "flex", alignItems: "center", justifyCenter: "center", marginBottom: 16, fontSize: 20 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--rose-soft)", color: "var(--rose)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16, fontSize: 20 }}>
                 <i className="ti ti-alert-triangle" style={{ margin: "auto" }} />
               </div>
               <h3 style={{ fontSize: 16, fontWeight: 500, marginBottom: 10 }}>Anomaly Auditing</h3>

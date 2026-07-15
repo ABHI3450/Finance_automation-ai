@@ -70,18 +70,18 @@ export async function POST(request: Request) {
 
     if (validRows.length > 0) {
       if (isChromaConfigured) {
-        console.log("RAG Ingestion: Upserting to ChromaDB collection 'bank_statements'...");
-        // 1. Get or create the Chroma collection
-        const collection = await chromaClient!.getOrCreateCollection({
-          name: "bank_statements"
-        });
-
-        // 2. Clear old data from collection
+        console.log("RAG Ingestion: Resetting ChromaDB collection 'bank_statements'...");
+        // 1. Clear existing collection
         try {
-          await collection.delete();
+          await chromaClient!.deleteCollection({ name: "bank_statements" });
         } catch (delErr) {
           // Ignore if empty
         }
+
+        // 2. Create the Chroma collection fresh
+        const collection = await chromaClient!.getOrCreateCollection({
+          name: "bank_statements"
+        });
 
         // 3. Upsert vectors
         await collection.add({

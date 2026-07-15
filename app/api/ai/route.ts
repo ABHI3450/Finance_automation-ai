@@ -100,9 +100,10 @@ export async function POST(request: Request) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
+    const groqApiKey = process.env.GROQ_API_KEY;
 
-    if (!apiKey) {
-      return NextResponse.json({ error: "Gemini API key is missing. Check your .env.local file." }, { status: 500 });
+    if (!apiKey && !groqApiKey) {
+      return NextResponse.json({ error: "API credentials (GEMINI_API_KEY or GROQ_API_KEY) are missing. Check your .env.local file." }, { status: 500 });
     }
 
     let finalContext = context;
@@ -210,35 +211,71 @@ export async function POST(request: Request) {
       console.log("RAG Fallback Mode: No database keys set. Processing query via client-provided context.");
     }
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
-      {
+    let text = "";
+
+    if (groqApiKey) {
+      console.log("Using Groq API for chat completion...");
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${groqApiKey}`
         },
         body: JSON.stringify({
-          contents: [
+          model: "llama-3.3-70b-versatile",
+          messages: [
             {
-              parts: [
-                {
-                  text: `${finalContext}\n\nSystem Instructions: You are a smart financial advisor AI inside a finance dashboard. Be concise, friendly, and actionable. Use bullet points. Keep replies under 120 words.\n\nUser question: ${prompt}`
-                }
-              ]
+              role: "system",
+              content: "You are a smart financial advisor AI inside a finance dashboard. Be concise, friendly, and actionable. Use bullet points. Keep replies under 120 words."
+            },
+            {
+              role: "user",
+              content: `${finalContext}\n\nUser question: ${prompt}`
             }
-          ]
-        }),
+          ],
+          temperature: 0.2,
+          max_tokens: 500
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData?.error?.message || `Groq API error status: ${res.status}`);
       }
-    );
 
-    const data = await res.json();
+      const data = await res.json();
+      text = data.choices?.[0]?.message?.content ?? "No response received.";
+    } else {
+      console.log("Using Gemini API for chat completion...");
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${finalContext}\n\nSystem Instructions: You are a smart financial advisor AI inside a finance dashboard. Be concise, friendly, and actionable. Use bullet points. Keep replies under 120 words.\n\nUser question: ${prompt}`
+                  }
+                ]
+              }
+            ]
+          }),
+        }
+      );
 
-    if (!res.ok) {
-      throw new Error(data.error?.message || "Error from Gemini API");
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error?.message || "Error from Gemini API");
+      }
+
+      const data = await res.json();
+      text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response received.";
     }
-
-    // Extracting the text response from Gemini's payload structure
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response received.";
 
     return NextResponse.json({ 
       text, 

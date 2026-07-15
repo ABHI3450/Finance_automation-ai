@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       if (isChromaConfigured) {
         console.log("RAG Ingestion: Upserting to ChromaDB collection 'bank_statements'...");
         // 1. Get or create the Chroma collection
-        const collection = await chromaClient.getOrCreateCollection({
+        const collection = await chromaClient!.getOrCreateCollection({
           name: "bank_statements"
         });
 

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
         // 2. Query either ChromaDB or Supabase depending on what is configured
         if (isChromaConfigured) {
           console.log("Querying ChromaDB vector database for similar transactions...");
-          const collection = await chromaClient.getCollection({
+          const collection = await chromaClient!.getCollection({
             name: "bank_statements"
           });
 

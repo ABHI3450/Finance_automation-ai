@@ -22,12 +22,13 @@ export async function POST(request: Request) {
         console.log("RAG Pipeline Active: Generating query vector...");
         // 1. Generate embedding for user query
         const embedRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1/models/text-embedding-004:embedContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1/models/gemini-embedding-2:embedContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              content: { parts: [{ text: prompt }] }
+              content: { parts: [{ text: prompt }] },
+              outputDimensionality: 768
             })
           }
         );

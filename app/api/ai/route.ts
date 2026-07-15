@@ -98,9 +98,8 @@ export async function POST(request: Request) {
       console.log("RAG Fallback Mode: No database keys set. Processing query via client-provided context.");
     }
 
-    // 3. Request Gemini completion with retrieved context
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {

@@ -952,7 +952,19 @@ export default function Home() {
     <main className="app-shell">
       {/* ══════════════ LEFT RAIL ══════════════ */}
       <aside className="rail">
-        <div className="rail-brand" onClick={() => setEnteredDashboard(false)} style={{ cursor: "pointer" }}>
+        <button 
+          className="rail-brand" 
+          onClick={() => setEnteredDashboard(false)} 
+          style={{ 
+            background: "transparent", 
+            border: "none", 
+            borderBottom: "0.5px solid var(--line)", 
+            width: "100%", 
+            textAlign: "left", 
+            cursor: "pointer",
+            padding: "4px 8px 22px" 
+          }}
+        >
           <div className="rail-mark">
             <i className="ti ti-currency-dollar" style={{ fontSize: 18, color: "#fff" }} />
           </div>
@@ -960,7 +972,7 @@ export default function Home() {
             Finance AI
             <small>Ledger Intelligence</small>
           </div>
-        </div>
+        </button>
 
         <nav className="rail-nav">
           {NAV_ITEMS.map((item) => (

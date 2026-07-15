@@ -70,34 +70,42 @@ export async function POST(request: Request) {
     const validRows = rowsToInsert.filter((r) => r.embedding !== null);
 
     if (validRows.length > 0) {
+      let chromaFailed = false;
       if (isChromaConfigured) {
-        console.log("RAG Ingestion: Resetting ChromaDB collection 'bank_statements'...");
-        // 1. Clear existing collection
         try {
-          await chromaClient!.deleteCollection({ name: "bank_statements" });
-        } catch (delErr) {
-          // Ignore if empty
+          console.log("RAG Ingestion: Resetting ChromaDB collection 'bank_statements'...");
+          // 1. Clear existing collection
+          try {
+            await chromaClient!.deleteCollection({ name: "bank_statements" });
+          } catch (delErr) {
+            // Ignore if empty
+          }
+
+          // 2. Create the Chroma collection fresh
+          const collection = await chromaClient!.getOrCreateCollection({
+            name: "bank_statements"
+          });
+
+          // 3. Upsert vectors
+          await collection.add({
+            ids: validRows.map((_, idx) => `txn_${Date.now()}_${idx}`),
+            embeddings: validRows.map((r) => r.embedding),
+            metadatas: validRows.map((r) => ({
+              date: r.date,
+              merchant: r.merchant,
+              amount: r.amount,
+              category: r.category
+            })),
+            documents: validRows.map((r) => `Date: ${r.date}, Merchant: ${r.merchant}, Amount: $${r.amount}, Category: ${r.category}`)
+          });
+          console.log(`ChromaDB Ingestion Success: Indexed ${validRows.length} transactions.`);
+        } catch (chromaErr) {
+          console.warn("ChromaDB ingestion failed, attempting Supabase fallback...", chromaErr);
+          chromaFailed = true;
         }
+      }
 
-        // 2. Create the Chroma collection fresh
-        const collection = await chromaClient!.getOrCreateCollection({
-          name: "bank_statements"
-        });
-
-        // 3. Upsert vectors
-        await collection.add({
-          ids: validRows.map((_, idx) => `txn_${Date.now()}_${idx}`),
-          embeddings: validRows.map((r) => r.embedding),
-          metadatas: validRows.map((r) => ({
-            date: r.date,
-            merchant: r.merchant,
-            amount: r.amount,
-            category: r.category
-          })),
-          documents: validRows.map((r) => `Date: ${r.date}, Merchant: ${r.merchant}, Amount: $${r.amount}, Category: ${r.category}`)
-        });
-        console.log(`ChromaDB Ingestion Success: Indexed ${validRows.length} transactions.`);
-      } else if (isSupabaseConfigured) {
+      if ((!isChromaConfigured || chromaFailed) && isSupabaseConfigured) {
         console.log("RAG Ingestion: Inserting to Supabase pgvector...");
         // Clear existing transactions in database before importing new statement
         const { error: deleteError } = await supabase

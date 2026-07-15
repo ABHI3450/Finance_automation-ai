@@ -42,35 +42,43 @@ export async function POST(request: Request) {
         const queryEmbedding = embedData?.embedding?.values ?? [];
 
         // 2. Query either ChromaDB or Supabase depending on what is configured
+        let chromaFailed = false;
         if (isChromaConfigured) {
-          console.log("Querying ChromaDB vector database for similar transactions...");
-          const collection = await chromaClient!.getCollection({
-            name: "bank_statements"
-          });
+          try {
+            console.log("Querying ChromaDB vector database for similar transactions...");
+            const collection = await chromaClient!.getCollection({
+              name: "bank_statements"
+            });
 
-          const queryResponse = await collection.query({
-            queryEmbeddings: [queryEmbedding],
-            nResults: 15
-          });
+            const queryResponse = await collection.query({
+              queryEmbeddings: [queryEmbedding],
+              nResults: 15
+            });
 
-          const metadatas = queryResponse.metadatas[0] || [];
-          const distances = queryResponse.distances?.[0] || [];
+            const metadatas = queryResponse.metadatas[0] || [];
+            const distances = queryResponse.distances?.[0] || [];
 
-          matchedRows = metadatas.map((m: any, idx: number) => {
-            const dist = distances[idx] ?? 0.1;
-            // Cosine distance is usually 0 to 2. Similarity = 1 - distance
-            const similarity = Math.max(0, Math.min(1, 1 - dist));
-            return {
-              date: m.date,
-              merchant: m.merchant,
-              amount: m.amount,
-              category: m.category,
-              similarity
-            };
-          });
+            matchedRows = metadatas.map((m: any, idx: number) => {
+              const dist = distances[idx] ?? 0.1;
+              // Cosine distance is usually 0 to 2. Similarity = 1 - distance
+              const similarity = Math.max(0, Math.min(1, 1 - dist));
+              return {
+                date: m.date,
+                merchant: m.merchant,
+                amount: m.amount,
+                category: m.category,
+                similarity
+              };
+            });
 
-          console.log(`ChromaDB RAG Success: Retrieved ${matchedRows.length} relevant transactions.`);
-        } else if (isSupabaseConfigured) {
+            console.log(`ChromaDB RAG Success: Retrieved ${matchedRows.length} relevant transactions.`);
+          } catch (chromaErr) {
+            console.warn("ChromaDB query failed, attempting Supabase fallback...", chromaErr);
+            chromaFailed = true;
+          }
+        }
+
+        if ((!isChromaConfigured || chromaFailed) && isSupabaseConfigured) {
           console.log("Querying Supabase pgvector database for similar transactions...");
           const { data, error: searchError } = await supabase.rpc('match_transactions', {
             query_embedding: queryEmbedding,
@@ -78,11 +86,20 @@ export async function POST(request: Request) {
             match_count: 15
           });
 
-          if (searchError) throw searchError;
-          matchedRows = data;
-          console.log(`Supabase RAG Success: Retrieved ${matchedRows?.length || 0} relevant transactions.`);
-        }
-
+          if (searchError) {
+            console.error("Supabase search error:", searchError.message);
+          } else {
+            matchedRows = (data || []).map((row: any) => ({
+              date: row.date,
+              merchant: row.merchant,
+              amount: row.amount,
+              category: row.category,
+              similarity: row.similarity ?? 0.8
+            }));
+            console.log(`Supabase RAG Success: Retrieved ${matchedRows?.length ?? 0} relevant transactions.`);
+          }
+        } 
+        
         if (matchedRows && matchedRows.length > 0) {
           finalContext = `Here are the retrieved relevant transactions matching the user query from the vector database:\n` +
             matchedRows

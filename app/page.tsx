@@ -76,7 +76,7 @@ export default function Home() {
 
   const handleSupportSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const email = "abhishek69fyp@gmail.com";
+    const email = "abhishek.chandra.dev1@gmail.com,abhishek69fyp@gmail.com";
     const subject = encodeURIComponent(`[Finance AI Support] ${supportSubject}`);
     const body = encodeURIComponent(`Hello Abhishek,\n\nI am encountering the following issue in the Finance AI app:\n\n${supportBody}\n\nSent from Finance Automation Panel.`);
     window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
@@ -986,8 +986,17 @@ export default function Home() {
       {/* ══════════════ MAIN CANVAS ══════════════ */}
       <div style={{ minHeight: "100vh" }}>
         <header className="topbar">
-          <div className="crumb">
-            Finance AI <span style={{ margin: "0 6px", opacity: 0.4 }}>/</span> <b>{activeNav}</b>
+          <div className="crumb" style={{ display: "flex", alignItems: "center" }}>
+            <span 
+              onClick={() => setEnteredDashboard(false)} 
+              style={{ cursor: "pointer", opacity: 0.85, transition: "opacity 0.2s" }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = "0.85"}
+            >
+              Finance AI
+            </span>
+            <span style={{ margin: "0 6px", opacity: 0.4 }}>/</span> 
+            <b>{activeNav}</b>
           </div>
 
           <div className="u-rel" ref={profileRef}>
@@ -1838,8 +1847,9 @@ export default function Home() {
                     
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                       <div>
-                        <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 4 }}>Support Mailbox</p>
-                        <p style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text)" }}>abhishek69fyp@gmail.com</p>
+                        <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", color: "var(--muted-2)", marginBottom: 4 }}>Support Mailboxes</p>
+                        <p style={{ fontSize: 13.5, fontWeight: 500, color: "var(--text)" }}>abhishek.chandra.dev1@gmail.com</p>
+                        <p style={{ fontSize: 13, color: "var(--muted-2)", marginTop: 4 }}>abhishek69fyp@gmail.com</p>
                       </div>
 
                       <div>
